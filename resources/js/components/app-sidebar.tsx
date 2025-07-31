@@ -4,14 +4,24 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { LayoutGrid } from 'lucide-react';
+import { Archive, LayoutGrid, Package } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
     {
         title: 'Tableau de bord',
-        href: '/',
+        href: route('dashboard'),
         icon: LayoutGrid,
+    },
+    {
+        title: 'Catégories',
+        href: route('categories.index'),
+        icon: Archive,
+    },
+    {
+        title: 'Produits',
+        href: route('products.index'),
+        icon: Package,
     },
 ];
 
