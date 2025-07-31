@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout'
-import { Category, type BreadcrumbItem } from '@/types'
-import { Head, router, usePage } from '@inertiajs/react'
+import { type Category, type BreadcrumbItem } from '@/types'
+import { Head, router } from '@inertiajs/react'
 import {
     useReactTable,
     getCoreRowModel,
