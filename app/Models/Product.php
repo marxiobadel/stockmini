@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Category;
 use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model

@@ -47,4 +47,27 @@ export interface Category {
     name: string;
     description: string | null;
     created_at: string;
+    updated_at: string;
+}
+
+export interface Supplier {
+    id: number;
+    name: string;
+    phone: string | null;
+    address: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Product {
+    id: number;
+    name: string;
+    description: string | null;
+    selling_price: number;
+    purchasing_price: number | null;
+    threshold_alert: number;
+    category_id: number;
+    created_at: string;
+    updated_at: string;
+    category: Category;
 }

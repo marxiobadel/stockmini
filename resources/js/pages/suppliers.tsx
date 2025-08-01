@@ -1,7 +1,7 @@
 "use client"
 
 import AppLayout from '@/layouts/app-layout';
-import { type Category, type BreadcrumbItem } from '@/types';
+import { type BreadcrumbItem, type Supplier } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import {
     useReactTable,
@@ -35,77 +35,78 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { useForm } from '@inertiajs/react'
 
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Tableau de bord', href: route('dashboard') },
-    { title: 'Catégories', href: route('categories.index') },
+    { title: 'Fournisseurs', href: route('suppliers.index') },
 ]
 
 interface PageProps {
-    categories: Category[]
+    suppliers: Supplier[]
 }
 
-const columnHelper = createColumnHelper<Category>()
+const columnHelper = createColumnHelper<Supplier>()
 
-export default function Index({ categories }: PageProps) {
+export default function Index({ suppliers }: PageProps) {
     const [globalFilter, setGlobalFilter] = React.useState('')
     const [dialogOpen, setDialogOpen] = React.useState(false);
     const [sorting, setSorting] = React.useState<SortingState>([])
-    
+
     // Pour modifier / ajouter via la même modale
     const [isEditMode, setIsEditMode] = React.useState(false)
-    const [currentCategoryId, setCurrentCategoryId] = React.useState<number | null>(null)
+    const [currentSupplierId, setCurrentSupplierId] = React.useState<number | null>(null)
 
     // Pour confirmation suppression
     const [alertDialogOpen, setAlertDialogOpen] = React.useState(false)
-    const [categoryToDelete, setCategoryToDelete] = React.useState<Category | null>(null)
+    const [supplierToDelete, setSupplierToDelete] = React.useState<Supplier | null>(null)
 
     const { data, setData, post, put, processing, reset, errors } = useForm({
         name: '',
-        description: '',
+        phone: '',
+        address: ''
     })
 
     const filteredData = React.useMemo(() => {
-        return categories.filter(c =>
-            c.name.toLowerCase().includes(globalFilter.toLowerCase()) ||
-            c.description?.toLowerCase().includes(globalFilter.toLowerCase())
+        return suppliers.filter(s =>
+            s.name.toLowerCase().includes(globalFilter.toLowerCase()) ||
+            s.phone?.toLowerCase().includes(globalFilter.toLowerCase()) ||
+            s.address?.toLowerCase().includes(globalFilter.toLowerCase())
         )
-    }, [categories, globalFilter])
+    }, [suppliers, globalFilter])
 
-    const handleAddOrEditCategory = () => {
-        if (isEditMode && currentCategoryId) {
-            put(route('categories.update', currentCategoryId), {
+    const handleAddOrEditSupplier = () => {
+        if (isEditMode && currentSupplierId) {
+            put(route('suppliers.update', currentSupplierId), {
                 onSuccess: () => {
                     setDialogOpen(false);
                     reset();
                     setIsEditMode(false);
-                    setCurrentCategoryId(null);
-                    toast('Catégorie modifiée', {
-                        description: 'La catégorie a été mise à jour avec succès.',
+                    setCurrentSupplierId(null);
+                    toast('Fournisseur modifié', {
+                        description: 'Le fournisseur a été mise à jour avec succès.',
                         duration: 4000,
                     })
                 },
             })
         } else {
-            post(route('categories.store'), {
+            post(route('suppliers.store'), {
                 onSuccess: () => {
                     setDialogOpen(false);
                     reset();
-                    toast('Catégorie ajoutée', {
-                        description: 'La nouvelle catégorie a été enregistrée avec succès.',
+                    toast('Fournisseur ajouté', {
+                        description: 'Le fournisseur a été enregistré avec succès.',
                         duration: 4000,
                     })
                 },
@@ -113,7 +114,7 @@ export default function Index({ categories }: PageProps) {
         }
     }
 
-    const columns: ColumnDef<Category, any>[] = [
+    const columns: ColumnDef<Supplier, any>[] = [
         columnHelper.accessor('id', {
             header: 'ID',
             cell: info => info.getValue(),
@@ -132,11 +133,18 @@ export default function Index({ categories }: PageProps) {
             cell: info => info.getValue(),
             enableSorting: true,
         }),
-        columnHelper.accessor('description', {
-            header: 'Description',
+        columnHelper.accessor('phone', {
+            header: 'Téléphone',
             cell: info => {
                 const value = info.getValue()
-                return value?.trim() ? value : <span className="italic text-muted-foreground">Aucune description</span>
+                return value?.trim() ? value : <span className="italic text-muted-foreground">Aucun téléphone</span>
+            },
+        }),
+        columnHelper.accessor('address', {
+            header: 'Adresse',
+            cell: info => {
+                const value = info.getValue()
+                return value?.trim() ? value : <span className="italic text-muted-foreground">Aucun adresse</span>
             },
         }),
         columnHelper.accessor('created_at', {
@@ -155,10 +163,11 @@ export default function Index({ categories }: PageProps) {
                             onClick={() => {
                                 setData({
                                     name: row.original.name,
-                                    description: row.original.description || '',
+                                    phone: row.original.phone || '',
+                                    address: row.original.address || '',
                                 })
                                 setIsEditMode(true)
-                                setCurrentCategoryId(row.original.id)
+                                setCurrentSupplierId(row.original.id)
                                 setDialogOpen(true)
                             }}
                         >
@@ -169,7 +178,7 @@ export default function Index({ categories }: PageProps) {
                             size="sm"
                             variant="destructive"
                             onClick={() => {
-                                setCategoryToDelete(row.original)
+                                setSupplierToDelete(row.original)
                                 setAlertDialogOpen(true)
                             }}
                         >
@@ -183,15 +192,15 @@ export default function Index({ categories }: PageProps) {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Êtes-vous sûr·e de vouloir supprimer la catégorie &quot;{categoryToDelete?.name}&quot; ? Cette action est irréversible.
+                                    Êtes-vous sûr·e de vouloir supprimer le fournisseur &quot;{supplierToDelete?.name}&quot; ? Cette action est irréversible.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Annuler</AlertDialogCancel>
                                 <AlertDialogAction
                                     onClick={() => {
-                                        if (categoryToDelete) {
-                                            router.delete(route('categories.destroy', categoryToDelete.id))
+                                        if (supplierToDelete) {
+                                            router.delete(route('suppliers.destroy', supplierToDelete.id))
                                             setAlertDialogOpen(false)
                                         }
                                     }}
@@ -220,11 +229,11 @@ export default function Index({ categories }: PageProps) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Liste des catégories" />
+            <Head title="Liste des fournisseurs" />
 
             <div className="p-4 sm:p-6 lg:p-8">
                 <div className="flex justify-between items-center mb-4">
-                    <h1 className="text-2xl font-bold">Catégories de produits</h1>
+                    <h1 className="text-2xl font-bold">Liste des fournisseurs</h1>
 
                     <div className="flex gap-2 items-center">
                         <Input
@@ -239,7 +248,7 @@ export default function Index({ categories }: PageProps) {
                             if (!open) {
                                 reset();
                                 setIsEditMode(false);
-                                setCurrentCategoryId(null);
+                                setCurrentSupplierId(null);
                             }
                         }}>
                             <DialogTrigger asChild>
@@ -250,7 +259,7 @@ export default function Index({ categories }: PageProps) {
                             </DialogTrigger>
                             <DialogContent>
                                 <DialogHeader>
-                                    <DialogTitle>{isEditMode ? 'Modifier la catégorie' : 'Ajouter une catégorie'}</DialogTitle>
+                                    <DialogTitle>{isEditMode ? 'Modifier le fournisseur' : 'Ajouter un fournisseur'}</DialogTitle>
                                 </DialogHeader>
                                 <div className="space-y-6">
                                     <div className="space-y-1">
@@ -272,30 +281,46 @@ export default function Index({ categories }: PageProps) {
                                             </p>
                                         )}
                                     </div>
-
                                     <div className="space-y-1">
-                                        <Label htmlFor="description">Description</Label>
-                                        <Textarea
-                                            id="description"
-                                            value={data.description}
-                                            onChange={e => setData('description', e.target.value)}
-                                            placeholder="Brève description de la catégorie"
-                                            rows={4}
+                                        <Label htmlFor="phone">Téléphone</Label>
+                                        <Input
+                                            id="phone"
+                                            value={data.phone}
+                                            onChange={e => setData('phone', e.target.value)}
+                                            placeholder="Ex: 672816752."
                                         />
-                                        {errors.description && (
+                                        {errors.phone && (
                                             <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
                                                 <span className="inline-block w-4 h-4">
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M4.293 4.293l15.414 15.414M12 20.5A8.5 8.5 0 113.5 12 8.5 8.5 0 0112 20.5z" />
                                                     </svg>
                                                 </span>
-                                                {errors.description}
+                                                {errors.phone}
                                             </p>
                                         )}
                                     </div>
-
+                                    <div className="space-y-1">
+                                        <Label htmlFor="address">Adresse</Label>
+                                        <Input
+                                            id="address"
+                                            value={data.address}
+                                            onChange={e => setData('address', e.target.value)}
+                                            placeholder="Ex: Mendong, Camp SIC"
+                                        />
+                                        {errors.address && (
+                                            <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
+                                                <span className="inline-block w-4 h-4">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M4.293 4.293l15.414 15.414M12 20.5A8.5 8.5 0 113.5 12 8.5 8.5 0 0112 20.5z" />
+                                                    </svg>
+                                                </span>
+                                                {errors.address}
+                                            </p>
+                                        )}
+                                    </div>
                                     <div className="flex justify-end">
-                                        <Button onClick={handleAddOrEditCategory} disabled={processing}>
+                                        <Button onClick={handleAddOrEditSupplier} disabled={processing}>
                                             {processing && <Loader2Icon className="animate-spin" />}
                                             {processing ? 'Enregistrement...' : 'Enregistrer'}
                                         </Button>
@@ -334,7 +359,7 @@ export default function Index({ categories }: PageProps) {
                             ) : (
                                 <TableRow>
                                     <TableCell colSpan={table.getAllColumns().length} className="text-center italic text-muted-foreground py-6">
-                                        Aucune catégorie trouvée.
+                                        Aucun fournisseur trouvé.
                                     </TableCell>
                                 </TableRow>
                             )}
