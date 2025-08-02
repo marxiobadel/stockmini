@@ -1,18 +1,19 @@
 "use client"
 
 import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type Supplier } from '@/types';
+import { type Product, type BreadcrumbItem, Supplier, Stock } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import {
     useReactTable,
     getCoreRowModel,
     getPaginationRowModel,
     getSortedRowModel,
+    getFilteredRowModel,
     flexRender,
     createColumnHelper,
     ColumnDef,
 } from '@tanstack/react-table';
-import type { SortingState } from '@tanstack/react-table'
+import type { Row, SortingState } from '@tanstack/react-table'
 import {
     Table,
     TableBody,
@@ -21,10 +22,17 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import {
+    Select,
+    SelectTrigger,
+    SelectValue,
+    SelectContent,
+    SelectItem,
+} from '@/components/ui/select'
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Pencil, Trash2, Plus, Loader2Icon, FileWarning } from 'lucide-react'
+import { Pencil, Trash2, Plus, Loader2Icon, BatteryWarning, FileWarning } from 'lucide-react'
 import React from 'react'
 
 import {
@@ -50,63 +58,55 @@ import {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Tableau de bord', href: route('dashboard') },
-    { title: 'Fournisseurs', href: route('suppliers.index') },
+    { title: 'Produit', href: route('products.index') },
 ]
 
 interface PageProps {
-    suppliers: Supplier[]
+    suppliers: Supplier[];
+    products: Product[];
+    stocks: Stock[];
 }
 
-const columnHelper = createColumnHelper<Supplier>()
+const columnHelper = createColumnHelper<Stock>()
 
-export default function Index({ suppliers }: PageProps) {
+export default function Index({ products, suppliers, stocks }: PageProps) {
     const [globalFilter, setGlobalFilter] = React.useState('')
     const [dialogOpen, setDialogOpen] = React.useState(false);
     const [sorting, setSorting] = React.useState<SortingState>([])
 
-    // Pour modifier / ajouter via la même modale
     const [isEditMode, setIsEditMode] = React.useState(false)
-    const [currentSupplierId, setCurrentSupplierId] = React.useState<number | null>(null)
+    const [currentStockId, setCurrentStockId] = React.useState<number | null>(null)
 
-    // Pour confirmation suppression
     const [alertDialogOpen, setAlertDialogOpen] = React.useState(false)
-    const [supplierToDelete, setSupplierToDelete] = React.useState<Supplier | null>(null)
+    const [stockToDelete, setStockToDelete] = React.useState<Stock | null>(null)
 
     const { data, setData, post, put, processing, reset, errors } = useForm({
-        name: '',
-        phone: '',
-        address: ''
-    })
+        quantity_in_stock: '',
+        product_id: '',
+        supplier_id: ''
+    });
 
-    const filteredData = React.useMemo(() => {
-        return suppliers.filter(s =>
-            s.name.toLowerCase().includes(globalFilter.toLowerCase()) ||
-            s.phone?.toLowerCase().includes(globalFilter.toLowerCase()) ||
-            s.address?.toLowerCase().includes(globalFilter.toLowerCase())
-        )
-    }, [suppliers, globalFilter])
-
-    const handleAddOrEditSupplier = () => {
-        if (isEditMode && currentSupplierId) {
-            put(route('suppliers.update', currentSupplierId), {
+    const handleAddOrEditStock = () => {
+        if (isEditMode && currentStockId) {
+            put(route('stocks.update', currentStockId), {
                 onSuccess: () => {
                     setDialogOpen(false);
                     reset();
                     setIsEditMode(false);
-                    setCurrentSupplierId(null);
-                    toast('Fournisseur modifié', {
-                        description: 'Le fournisseur a été mise à jour avec succès.',
+                    setCurrentStockId(null);
+                    toast('Stock modifié', {
+                        description: 'Le stock a été mis à jour avec succès.',
                         duration: 4000,
                     })
                 },
             })
         } else {
-            post(route('suppliers.store'), {
+            post(route('stocks.store'), {
                 onSuccess: () => {
                     setDialogOpen(false);
                     reset();
-                    toast('Fournisseur ajouté', {
-                        description: 'Le fournisseur a été enregistré avec succès.',
+                    toast('Stock ajouté', {
+                        description: 'Le stock a été enregistré avec succès.',
                         duration: 4000,
                     })
                 },
@@ -114,38 +114,31 @@ export default function Index({ suppliers }: PageProps) {
         }
     }
 
-    const columns: ColumnDef<Supplier, any>[] = [
+    // Fonction de filtrage global : filtre uniquement sur product.name et supplier.name
+    function customGlobalFilter(row: Row<Stock>, columnId: string, filterValue: string): boolean {
+        const search = filterValue.toLowerCase();
+        return (
+            row.original.product?.name.toLowerCase().includes(search) ||
+            row.original.supplier?.name.toLowerCase().includes(search)
+        );
+    }
+
+    const columns: ColumnDef<Stock, any>[] = [
         columnHelper.accessor('id', {
             header: 'ID',
             cell: info => info.getValue(),
         }),
-        columnHelper.accessor('name', {
-            header: ({ column }) => (
-                <div
-                    onClick={() => column.toggleSorting()}
-                    className="cursor-pointer select-none flex items-center gap-1"
-                >
-                    Nom
-                    {column.getIsSorted() === 'asc' && <span>↑</span>}
-                    {column.getIsSorted() === 'desc' && <span>↓</span>}
-                </div>
-            ),
+        columnHelper.accessor('quantity_in_stock', {
+            header: 'Quantité',
+            cell: info => info.getValue()
+        }),
+        columnHelper.accessor('product.name', {
+            header: "Produit",
             cell: info => info.getValue(),
-            enableSorting: true,
         }),
-        columnHelper.accessor('phone', {
-            header: 'Téléphone',
-            cell: info => {
-                const value = info.getValue()
-                return value?.trim() ? value : <span className="italic text-muted-foreground">Aucun téléphone</span>
-            },
-        }),
-        columnHelper.accessor('address', {
-            header: 'Adresse',
-            cell: info => {
-                const value = info.getValue()
-                return value?.trim() ? value : <span className="italic text-muted-foreground">Aucun adresse</span>
-            },
+        columnHelper.accessor('supplier.name', {
+            header: 'Fournisseur',
+            cell: info => info.getValue()
         }),
         columnHelper.accessor('created_at', {
             header: 'Créé le',
@@ -162,13 +155,13 @@ export default function Index({ suppliers }: PageProps) {
                             variant="outline"
                             onClick={() => {
                                 setData({
-                                    name: row.original.name,
-                                    phone: row.original.phone || '',
-                                    address: row.original.address || '',
-                                })
-                                setIsEditMode(true)
-                                setCurrentSupplierId(row.original.id)
-                                setDialogOpen(true)
+                                    quantity_in_stock: String(row.original.quantity_in_stock),
+                                    supplier_id: String(row.original.supplier_id),
+                                    product_id: String(row.original.product_id)
+                                });
+                                setIsEditMode(true);
+                                setCurrentStockId(row.original.id);
+                                setDialogOpen(true);
                             }}
                         >
                             <Pencil className="w-4 h-4" />
@@ -178,7 +171,7 @@ export default function Index({ suppliers }: PageProps) {
                             size="sm"
                             variant="destructive"
                             onClick={() => {
-                                setSupplierToDelete(row.original)
+                                setStockToDelete(row.original)
                                 setAlertDialogOpen(true)
                             }}
                         >
@@ -186,21 +179,20 @@ export default function Index({ suppliers }: PageProps) {
                         </Button>
                     </div>
 
-                    {/* AlertDialog pour confirmation suppression */}
                     <AlertDialog open={alertDialogOpen} onOpenChange={setAlertDialogOpen}>
                         <AlertDialogContent>
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    Êtes-vous sûr·e de vouloir supprimer le fournisseur &quot;{supplierToDelete?.name}&quot; ? Cette action est irréversible.
+                                    Êtes-vous sûr·e de vouloir supprimer le stock ? Cette action est irréversible.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Annuler</AlertDialogCancel>
                                 <AlertDialogAction
                                     onClick={() => {
-                                        if (supplierToDelete) {
-                                            router.delete(route('suppliers.destroy', supplierToDelete.id))
+                                        if (stockToDelete) {
+                                            router.delete(route('stocks.destroy', stockToDelete.id))
                                             setAlertDialogOpen(false)
                                         }
                                     }}
@@ -216,28 +208,32 @@ export default function Index({ suppliers }: PageProps) {
     ]
 
     const table = useReactTable({
-        data: filteredData,
+        data: stocks,
         columns,
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
         getSortedRowModel: getSortedRowModel(),
+        getFilteredRowModel: getFilteredRowModel(),
+        globalFilterFn: customGlobalFilter,
         state: {
             sorting,
+            globalFilter,
         },
         onSortingChange: setSorting,
+        onGlobalFilterChange: setGlobalFilter,
     })
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Liste des fournisseurs" />
+            <Head title="Liste des stocks" />
 
             <div className="p-4 sm:p-6 lg:p-8">
                 <div className="flex justify-between items-center mb-4">
-                    <h1 className="text-2xl font-bold">Liste des fournisseurs</h1>
+                    <h1 className="text-2xl font-bold">Ravitaillement</h1>
 
                     <div className="flex gap-2 items-center">
                         <Input
-                            placeholder="Rechercher..."
+                            placeholder="Rechercher (produit ou fournisseur)..."
                             value={globalFilter}
                             onChange={e => setGlobalFilter(e.target.value)}
                             className="w-64"
@@ -248,7 +244,7 @@ export default function Index({ suppliers }: PageProps) {
                             if (!open) {
                                 reset();
                                 setIsEditMode(false);
-                                setCurrentSupplierId(null);
+                                setCurrentStockId(null);
                             }
                         }}>
                             <DialogTrigger asChild>
@@ -259,60 +255,78 @@ export default function Index({ suppliers }: PageProps) {
                             </DialogTrigger>
                             <DialogContent>
                                 <DialogHeader>
-                                    <DialogTitle>{isEditMode ? 'Modifier le fournisseur' : 'Ajouter un fournisseur'}</DialogTitle>
+                                    <DialogTitle>{isEditMode ? 'Modifier le stock' : 'Ajouter un stock'}</DialogTitle>
                                 </DialogHeader>
                                 <div className="space-y-6">
                                     <div className="space-y-1">
-                                        <Label htmlFor="name">Nom <span className="text-red-500">*</span></Label>
+                                        <Label htmlFor="quantity_in_stock">Quantité <span className="text-red-500">*</span></Label>
                                         <Input
-                                            id="name"
-                                            value={data.name}
-                                            onChange={e => setData('name', e.target.value)}
-                                            placeholder="Ex: Informatique, Vêtements..."
+                                            id="quantity_in_stock"
+                                            value={data.quantity_in_stock}
+                                            onChange={e => setData('quantity_in_stock', e.target.value)}
                                         />
-                                        {errors.name && (
+                                        {errors.quantity_in_stock && (
                                             <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
                                                 <FileWarning className="w-4 h-4" />
-                                                {errors.name}
+                                                {errors.quantity_in_stock}
                                             </p>
                                         )}
                                     </div>
-                                    <div className="space-y-1">
-                                        <Label htmlFor="phone">Téléphone</Label>
-                                        <Input
-                                            id="phone"
-                                            value={data.phone}
-                                            onChange={e => setData('phone', e.target.value)}
-                                            placeholder="Ex: 672816752."
-                                        />
-                                        {errors.phone && (
+
+                                    <div className="flex-1 space-y-1">
+                                        <Label htmlFor="product_id">Produit <span className="text-red-500">*</span></Label>
+                                        <Select
+                                            value={data.product_id}
+                                            onValueChange={(value) => setData('product_id', value)}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Choisissez un produit" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {products.map(product => (
+                                                    <SelectItem key={product.id} value={String(product.id)}>
+                                                        {product.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        {errors.product_id && (
                                             <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
                                                 <FileWarning className="w-4 h-4" />
-                                                {errors.phone}
+                                                {errors.product_id}
                                             </p>
                                         )}
                                     </div>
-                                    <div className="space-y-1">
-                                        <Label htmlFor="address">Adresse</Label>
-                                        <Input
-                                            id="address"
-                                            value={data.address}
-                                            onChange={e => setData('address', e.target.value)}
-                                            placeholder="Ex: Mendong, Camp SIC"
-                                        />
-                                        {errors.address && (
+                                    <div className="flex-1 space-y-1">
+                                        <Label htmlFor="supplier_id">Fournisseur <span className="text-red-500">*</span></Label>
+                                        <Select
+                                            value={data.supplier_id}
+                                            onValueChange={(value) => setData('supplier_id', value)}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Choisissez un fournisseur" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {suppliers.map(supplier => (
+                                                    <SelectItem key={supplier.id} value={String(supplier.id)}>
+                                                        {supplier.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        {errors.supplier_id && (
                                             <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
                                                 <FileWarning className="w-4 h-4" />
-                                                {errors.address}
+                                                {errors.supplier_id}
                                             </p>
                                         )}
                                     </div>
-                                    <div className="flex justify-end">
-                                        <Button onClick={handleAddOrEditSupplier} disabled={processing}>
-                                            {processing && <Loader2Icon className="animate-spin" />}
-                                            {processing ? 'Enregistrement...' : 'Enregistrer'}
-                                        </Button>
-                                    </div>
+                                </div>
+                                <div className="flex justify-end">
+                                    <Button onClick={handleAddOrEditStock} disabled={processing}>
+                                        {processing && <Loader2Icon className="animate-spin" />}
+                                        {processing ? 'Enregistrement...' : 'Enregistrer'}
+                                    </Button>
                                 </div>
                             </DialogContent>
                         </Dialog>
@@ -347,7 +361,7 @@ export default function Index({ suppliers }: PageProps) {
                             ) : (
                                 <TableRow>
                                     <TableCell colSpan={table.getAllColumns().length} className="text-center italic text-muted-foreground py-6">
-                                        Aucun fournisseur trouvé.
+                                        Aucun stock trouvé.
                                     </TableCell>
                                 </TableRow>
                             )}

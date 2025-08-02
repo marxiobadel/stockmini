@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { Archive, House, LayoutGrid, Package } from 'lucide-react';
+import { Archive, House, LayoutGrid, Package, PackageCheck } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -27,6 +27,11 @@ const mainNavItems: NavItem[] = [
         title: 'Produits',
         href: route('products.index'),
         icon: Package,
+    },
+    {
+        title: 'Stocks',
+        href: route('stocks.index'),
+        icon: PackageCheck,
     },
 ];
 

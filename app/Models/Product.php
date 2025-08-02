@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model
@@ -25,9 +26,16 @@ class Product extends Model
         return $this->belongsToMany(Supplier::class);
     }
 
-    public function stock()
+    public function stocks()
     {
-        return $this->hasOne(Stock::class);
+        return $this->hasMany(Stock::class);
+    }
+
+    public function quantityInStock(): Attribute
+    {
+        return new Attribute(
+            get: fn () => $this->stocks->sum('quantity_in_stock')
+        );
     }
 
     public function movements()

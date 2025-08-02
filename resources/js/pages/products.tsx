@@ -3,57 +3,19 @@
 import AppLayout from '@/layouts/app-layout';
 import { type Product, type BreadcrumbItem, Category } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import {
-    useReactTable,
-    getCoreRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    flexRender,
-    createColumnHelper,
-    ColumnDef,
-} from '@tanstack/react-table';
+import { useReactTable, getCoreRowModel, getPaginationRowModel, getSortedRowModel, flexRender, createColumnHelper, ColumnDef } from '@tanstack/react-table';
 import type { SortingState } from '@tanstack/react-table'
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
-import {
-    Select,
-    SelectTrigger,
-    SelectValue,
-    SelectContent,
-    SelectItem,
-} from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectTrigger, SelectValue, SelectContent,SelectItem } from '@/components/ui/select'
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Pencil, Trash2, Plus, Loader2Icon } from 'lucide-react'
+import { Pencil, Trash2, Plus, Loader2Icon, FileWarning } from 'lucide-react'
 import React from 'react'
-
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { useForm } from '@inertiajs/react'
-
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { currencyFormatter } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -177,14 +139,14 @@ export default function Index({ products, categories }: PageProps) {
                                 setData({
                                     name: row.original.name,
                                     description: row.original.description || '',
-                                    selling_price: row.original.selling_price,
-                                    purchasing_price: row.original.purchasing_price || '',
-                                    threshold_alert: row.original.threshold_alert,
+                                    selling_price: String(row.original.selling_price),
+                                    purchasing_price: row.original.purchasing_price ? String(row.original.purchasing_price) : '',
+                                    threshold_alert: String(row.original.threshold_alert),
                                     category_id: String(row.original.category_id)
-                                })
-                                setIsEditMode(true)
-                                setCurrentProductId(row.original.id)
-                                setDialogOpen(true)
+                                });
+                                setIsEditMode(true);
+                                setCurrentProductId(row.original.id);
+                                setDialogOpen(true);
                             }}
                         >
                             <Pencil className="w-4 h-4" />
@@ -288,11 +250,7 @@ export default function Index({ products, categories }: PageProps) {
                                         />
                                         {errors.name && (
                                             <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
-                                                <span className="inline-block w-4 h-4">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M4.293 4.293l15.414 15.414M12 20.5A8.5 8.5 0 113.5 12 8.5 8.5 0 0112 20.5z" />
-                                                    </svg>
-                                                </span>
+                                                <FileWarning className="w-4 h-4" />
                                                 {errors.name}
                                             </p>
                                         )}
@@ -308,11 +266,7 @@ export default function Index({ products, categories }: PageProps) {
                                         />
                                         {errors.description && (
                                             <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
-                                                <span className="inline-block w-4 h-4">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M4.293 4.293l15.414 15.414M12 20.5A8.5 8.5 0 113.5 12 8.5 8.5 0 0112 20.5z" />
-                                                    </svg>
-                                                </span>
+                                                <FileWarning className="w-4 h-4" />
                                                 {errors.description}
                                             </p>
                                         )}
@@ -327,11 +281,7 @@ export default function Index({ products, categories }: PageProps) {
                                             />
                                             {errors.selling_price && (
                                                 <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
-                                                    <span className="inline-block w-4 h-4">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M4.293 4.293l15.414 15.414M12 20.5A8.5 8.5 0 113.5 12 8.5 8.5 0 0112 20.5z" />
-                                                        </svg>
-                                                    </span>
+                                                    <FileWarning className="w-4 h-4" />
                                                     {errors.selling_price}
                                                 </p>
                                             )}
@@ -346,11 +296,7 @@ export default function Index({ products, categories }: PageProps) {
                                             />
                                             {errors.purchasing_price && (
                                                 <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
-                                                    <span className="inline-block w-4 h-4">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M4.293 4.293l15.414 15.414M12 20.5A8.5 8.5 0 113.5 12 8.5 8.5 0 0112 20.5z" />
-                                                        </svg>
-                                                    </span>
+                                                    <FileWarning className="w-4 h-4" />
                                                     {errors.purchasing_price}
                                                 </p>
                                             )}
@@ -366,11 +312,7 @@ export default function Index({ products, categories }: PageProps) {
                                             />
                                             {errors.threshold_alert && (
                                                 <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
-                                                    <span className="inline-block w-4 h-4">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M4.293 4.293l15.414 15.414M12 20.5A8.5 8.5 0 113.5 12 8.5 8.5 0 0112 20.5z" />
-                                                        </svg>
-                                                    </span>
+                                                    <FileWarning className="w-4 h-4" />
                                                     {errors.threshold_alert}
                                                 </p>
                                             )}
@@ -394,11 +336,7 @@ export default function Index({ products, categories }: PageProps) {
                                             </Select>
                                             {errors.category_id && (
                                                 <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
-                                                    <span className="inline-block w-4 h-4">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01M4.293 4.293l15.414 15.414M12 20.5A8.5 8.5 0 113.5 12 8.5 8.5 0 0112 20.5z" />
-                                                        </svg>
-                                                    </span>
+                                                    <FileWarning className="w-4 h-4" />
                                                     {errors.category_id}
                                                 </p>
                                             )}
