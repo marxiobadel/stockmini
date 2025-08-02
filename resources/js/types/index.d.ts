@@ -79,6 +79,10 @@ export interface Product {
     updated_at: string;
     category: Category;
     unity: Unity;
+    pivot?: {
+        quantity: number;
+        price: number;
+    },
 }
 
 export interface Stock {
@@ -97,4 +101,15 @@ export interface Unity {
     name: string;
     created_at: string;
     updated_at: string;
+};
+
+export interface Order {
+    id: number;
+    reference: string;
+    amount: number;
+    date: string;
+    created_at: string;
+    updated_at: string;
+    products?: Product[];
+    products_count: number;
 };
