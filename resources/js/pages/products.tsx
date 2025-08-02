@@ -1,12 +1,12 @@
 "use client"
 
 import AppLayout from '@/layouts/app-layout';
-import { type Product, type BreadcrumbItem, Category } from '@/types';
+import { type Product, type BreadcrumbItem, Category, Unity } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { useReactTable, getCoreRowModel, getPaginationRowModel, getSortedRowModel, flexRender, createColumnHelper, ColumnDef } from '@tanstack/react-table';
 import type { SortingState } from '@tanstack/react-table'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectTrigger, SelectValue, SelectContent,SelectItem } from '@/components/ui/select'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label'
 import { useForm } from '@inertiajs/react'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import { currencyFormatter } from '@/lib/utils';
+import { currencyFormatter, plural } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -27,11 +27,12 @@ const breadcrumbs: BreadcrumbItem[] = [
 interface PageProps {
     products: Product[];
     categories: Category[];
+    unities: Unity[];
 }
 
 const columnHelper = createColumnHelper<Product>()
 
-export default function Index({ products, categories }: PageProps) {
+export default function Index({ products, categories, unities }: PageProps) {
     const [globalFilter, setGlobalFilter] = React.useState('')
     const [dialogOpen, setDialogOpen] = React.useState(false);
     const [sorting, setSorting] = React.useState<SortingState>([])
@@ -50,7 +51,8 @@ export default function Index({ products, categories }: PageProps) {
         selling_price: '',
         purchasing_price: '',
         threshold_alert: '',
-        category_id: ''
+        category_id: '',
+        unity_id: ''
     });
 
     const filteredData = React.useMemo(() => {
@@ -122,6 +124,30 @@ export default function Index({ products, categories }: PageProps) {
             header: 'Catégorie',
             cell: info => info.getValue()
         }),
+        columnHelper.accessor('quantity_in_stock', {
+            header: 'Quantité en stock',
+            cell: info => {
+                const product = info.row.original;
+                const quantity = product.quantity_in_stock;
+                const threshold = product.threshold_alert;
+
+                const isBelowThreshold = quantity <= threshold;
+
+                return (
+                    <span className={isBelowThreshold ? 'text-red-600 font-semibold' : ''}>
+                        {plural(quantity, product.unity.name)}
+                    </span>
+                );
+            }
+        }),
+        columnHelper.accessor('threshold_alert', {
+            header: "Stock d'alerte",
+            cell: info => {
+                const product = info.row.original;
+
+                return plural(product.threshold_alert, product.unity.name);
+            }
+        }),
         columnHelper.accessor('created_at', {
             header: 'Créé le',
             cell: info => new Date(info.getValue()).toLocaleDateString('fr-FR'),
@@ -142,7 +168,8 @@ export default function Index({ products, categories }: PageProps) {
                                     selling_price: String(row.original.selling_price),
                                     purchasing_price: row.original.purchasing_price ? String(row.original.purchasing_price) : '',
                                     threshold_alert: String(row.original.threshold_alert),
-                                    category_id: String(row.original.category_id)
+                                    category_id: String(row.original.category_id),
+                                    unity_id: String(row.original.unity_id)
                                 });
                                 setIsEditMode(true);
                                 setCurrentProductId(row.original.id);
@@ -276,6 +303,7 @@ export default function Index({ products, categories }: PageProps) {
                                             <Label htmlFor="selling_price">Prix de vente <span className="text-red-500">*</span></Label>
                                             <Input
                                                 id="selling_price"
+                                                type='number'
                                                 value={data.selling_price}
                                                 onChange={e => setData('selling_price', e.target.value)}
                                             />
@@ -291,6 +319,7 @@ export default function Index({ products, categories }: PageProps) {
                                             <Label htmlFor="purchasing_price">Prix d'achat</Label>
                                             <Input
                                                 id="purchasing_price"
+                                                type='number'
                                                 value={data.purchasing_price}
                                                 onChange={e => setData('purchasing_price', e.target.value)}
                                             />
@@ -301,12 +330,11 @@ export default function Index({ products, categories }: PageProps) {
                                                 </p>
                                             )}
                                         </div>
-                                    </div>
-                                    <div className="flex gap-4">
                                         <div className="flex-1 space-y-1">
                                             <Label htmlFor="threshold_alert">Stock d'alerte <span className="text-red-500">*</span></Label>
                                             <Input
                                                 id="threshold_alert"
+                                                type='number'
                                                 value={data.threshold_alert}
                                                 onChange={e => setData('threshold_alert', e.target.value)}
                                             />
@@ -317,6 +345,8 @@ export default function Index({ products, categories }: PageProps) {
                                                 </p>
                                             )}
                                         </div>
+                                    </div>
+                                    <div className="flex gap-4">
                                         <div className="flex-1 space-y-1">
                                             <Label htmlFor="category_id">Catégorie <span className="text-red-500">*</span></Label>
                                             <Select
@@ -338,6 +368,30 @@ export default function Index({ products, categories }: PageProps) {
                                                 <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
                                                     <FileWarning className="w-4 h-4" />
                                                     {errors.category_id}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 space-y-1">
+                                            <Label htmlFor="unity_id">Unité <span className="text-red-500">*</span></Label>
+                                            <Select
+                                                value={data.unity_id}
+                                                onValueChange={(value) => setData('unity_id', value)}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Choisissez une unité" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {unities.map(unity => (
+                                                        <SelectItem key={unity.id} value={String(unity.id)}>
+                                                            {unity.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            {errors.unity_id && (
+                                                <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
+                                                    <FileWarning className="w-4 h-4" />
+                                                    {errors.unity_id}
                                                 </p>
                                             )}
                                         </div>

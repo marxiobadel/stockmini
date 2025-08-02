@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupplierController;
@@ -13,6 +14,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('suppliers', SupplierController::class)->except(['edit', 'create', 'show']);
     Route::resource('products', ProductController::class)->except(['edit', 'create', 'show']);
     Route::resource('stocks', StockController::class)->except(['edit', 'create', 'show']);
+    Route::resource('orders', OrderController::class)->except(['edit', 'create']);
 });
 
 require __DIR__.'/settings.php';

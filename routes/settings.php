@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
+use App\Http\Controllers\Settings\UnityController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -11,6 +12,10 @@ Route::middleware('auth')->group(function () {
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::get('settings/unities', [UnityController::class, 'index'])->name('unities.index');
+    Route::post('settings/unities', [UnityController::class, 'store'])->name('unities.store');
+    Route::delete('settings/unities/{unity}', [UnityController::class, 'destroy'])->name('unities.destroy');
 
     Route::get('settings/password', [PasswordController::class, 'edit'])->name('password.edit');
 

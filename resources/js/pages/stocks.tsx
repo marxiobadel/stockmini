@@ -55,6 +55,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { plural } from '@/lib/utils';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Tableau de bord', href: route('dashboard') },
@@ -130,7 +131,11 @@ export default function Index({ products, suppliers, stocks }: PageProps) {
         }),
         columnHelper.accessor('quantity_in_stock', {
             header: 'Quantité',
-            cell: info => info.getValue()
+            cell: info => {
+                const stock = info.row.original;
+
+                return plural(stock.quantity_in_stock, stock.product.unity.name);
+            }
         }),
         columnHelper.accessor('product.name', {
             header: "Produit",
@@ -142,6 +147,10 @@ export default function Index({ products, suppliers, stocks }: PageProps) {
         }),
         columnHelper.accessor('created_at', {
             header: 'Créé le',
+            cell: info => new Date(info.getValue()).toLocaleDateString('fr-FR'),
+        }),
+        columnHelper.accessor('updated_at', {
+            header: 'Modifié le',
             cell: info => new Date(info.getValue()).toLocaleDateString('fr-FR'),
         }),
         {
@@ -156,8 +165,8 @@ export default function Index({ products, suppliers, stocks }: PageProps) {
                             onClick={() => {
                                 setData({
                                     quantity_in_stock: String(row.original.quantity_in_stock),
-                                    supplier_id: String(row.original.supplier_id),
-                                    product_id: String(row.original.product_id)
+                                    supplier_id: String(row.original.supplier.id),
+                                    product_id: String(row.original.product.id)
                                 });
                                 setIsEditMode(true);
                                 setCurrentStockId(row.original.id);

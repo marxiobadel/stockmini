@@ -28,6 +28,10 @@ export interface SharedData {
     auth: Auth;
     ziggy: Config & { location: string };
     sidebarOpen: boolean;
+    flash?: {
+        status?: string;
+        message?: string;
+    };
     [key: string]: unknown;
 }
 
@@ -70,14 +74,16 @@ export interface Product {
     purchasing_price: number | null;
     threshold_alert: number;
     category_id: number;
+    unity_id: number;
     created_at: string;
     updated_at: string;
     category: Category;
+    unity: Unity;
 }
 
 export interface Stock {
     id: number;
-    quantity_in_stock: number | string;
+    quantity_in_stock: number;
     product_id: number;
     supplier_id: number;
     product: Product;
@@ -85,3 +91,10 @@ export interface Stock {
     created_at: string;
     updated_at: string;
 }
+
+export interface Unity {
+    id: number;
+    name: string;
+    created_at: string;
+    updated_at: string;
+};

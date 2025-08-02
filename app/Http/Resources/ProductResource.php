@@ -32,6 +32,12 @@ class ProductResource extends JsonResource
                 'created_at' => $this->category->created_at,
                 'updated_at' => $this->category->updated_at,
             ],
+            'unity' => [
+                'id' => $this->unity->id,
+                'name' => $this->unity->name,
+                'created_at' => $this->unity->created_at,
+                'updated_at' => $this->unity->updated_at,
+            ],
         ];
     }
 }

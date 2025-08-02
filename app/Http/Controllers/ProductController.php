@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ProductResource;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Unity;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -14,8 +15,9 @@ class ProductController extends Controller
     public function index()
     {
         return Inertia::render('products', [
+            'unities' => Unity::latest()->get(),
             'categories' => Category::latest()->get(),
-            'products' => ProductResource::collection(Product::with('category')->latest()->get()) 
+            'products' => ProductResource::collection(Product::with('category')->latest()->get())
         ]);
     }
 
@@ -28,6 +30,7 @@ class ProductController extends Controller
             'purchasing_price' => 'nullable|numeric',
             'threshold_alert' => 'required|integer',
             'category_id' => 'required|exists:categories,id',
+            'unity_id' => 'required|exists:unities,id',
         ]);
 
         Product::create($validated);
@@ -44,6 +47,7 @@ class ProductController extends Controller
             'purchasing_price' => 'nullable|numeric',
             'threshold_alert' => 'required|integer',
             'category_id' => 'required|exists:categories,id',
+            'unity_id' => 'required|exists:unities,id',
         ]);
 
         $product->update($validated);

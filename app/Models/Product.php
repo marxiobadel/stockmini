@@ -16,6 +16,11 @@ class Product extends Model
         'category_id',
     ];
 
+    public function unity()
+    {
+        return $this->belongsTo(Unity::class);
+    }
+
     public function category()
     {
         return $this->belongsTo(Category::class);
