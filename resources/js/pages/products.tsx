@@ -124,6 +124,14 @@ export default function Index({ products, categories, unities }: PageProps) {
             header: 'Catégorie',
             cell: info => info.getValue()
         }),
+        columnHelper.accessor('quantity', {
+            header: "Quantité",
+            cell: info => {
+                const product = info.row.original;
+
+                return plural(product.quantity, product.unity.name);
+            }
+        }),
         columnHelper.accessor('quantity_in_stock', {
             header: 'Quantité en stock',
             cell: info => {

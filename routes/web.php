@@ -15,6 +15,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('products', ProductController::class)->except(['edit', 'create', 'show']);
     Route::resource('stocks', StockController::class)->except(['edit', 'create', 'show']);
     Route::resource('orders', OrderController::class)->except(['edit', 'create']);
+    Route::get('/orders/{order}/print', [OrderController::class, 'print'])->name('orders.print');
 });
 
 require __DIR__.'/settings.php';

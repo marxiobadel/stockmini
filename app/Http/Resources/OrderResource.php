@@ -19,6 +19,7 @@ class OrderResource extends JsonResource
             'reference' => $this->reference,
             'date' => $this->date,
             'amount' => $this->amount,
+            'products_count' => $this->products->count(),
             'products' => $this->products->map(function ($product) {
                 return [
                     'id' => $product->id,

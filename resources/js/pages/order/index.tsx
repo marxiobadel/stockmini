@@ -3,29 +3,10 @@
 import AppLayout from '@/layouts/app-layout';
 import { type Product, type BreadcrumbItem, Order } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import {
-    useReactTable,
-    getCoreRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    getFilteredRowModel,
-    flexRender,
-    createColumnHelper,
-    ColumnDef,
-} from '@tanstack/react-table';
-import type { Row, SortingState } from '@tanstack/react-table'
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Pencil, Trash2, Plus, Loader2Icon, FileWarning } from 'lucide-react'
+import { Plus, Loader2Icon } from 'lucide-react'
 import React from 'react'
 
 import {
@@ -48,10 +29,12 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { currencyFormatter } from '@/lib/utils';
+import OrdersTable from './orders-table';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Tableau de bord', href: route('dashboard') },
-    { title: 'Produit', href: route('products.index') },
+    { title: 'Ventes', href: route('orders.index') },
 ]
 
 interface PageProps {
@@ -59,24 +42,25 @@ interface PageProps {
     products: Product[];
 }
 
-const columnHelper = createColumnHelper<Order>()
-
 export default function Index({ products, orders }: PageProps) {
     const [globalFilter, setGlobalFilter] = React.useState('')
     const [dialogOpen, setDialogOpen] = React.useState(false);
-    const [sorting, setSorting] = React.useState<SortingState>([])
-
     const [isEditMode, setIsEditMode] = React.useState(false)
     const [currentOrderId, setCurrentOrderId] = React.useState<number | null>(null)
-
     const [alertDialogOpen, setAlertDialogOpen] = React.useState(false)
     const [orderToDelete, setOrderToDelete] = React.useState<Order | null>(null)
+    const [productSearch, setProductSearch] = React.useState('');
 
-    const { data, setData, post, put, processing, reset, errors } = useForm<{
+    const { data, setData, post, put, processing, reset } = useForm<{
         product_ids: number[];
+        product_quantities: Record<number, number>; // id → quantité
     }>({
         product_ids: [],
+        product_quantities: {},
     });
+
+    const selectedCount = data.product_ids.length;
+    const maxToShow = selectedCount > 8 ? selectedCount : 8;
 
     const handleAddOrEditOrder = () => {
         if (isEditMode && currentOrderId) {
@@ -91,6 +75,11 @@ export default function Index({ products, orders }: PageProps) {
                         duration: 4000,
                     })
                 },
+                onError: (errors) => {
+                    toast.error('Erreur lors de la modification', {
+                        description: Object.values(errors).join(', '),
+                    });
+                }
             })
         } else {
             post(route('orders.store'), {
@@ -102,121 +91,15 @@ export default function Index({ products, orders }: PageProps) {
                         duration: 4000,
                     })
                 },
+                onError: (errors) => {
+                    toast.error('Erreur lors de l\'ajout', {
+                        description: Object.values(errors).join(', '),
+                        duration: 10000
+                    });
+                }
             })
         }
     }
-
-    function customGlobalFilter(row: Row<Order>, columnId: string, filterValue: string): boolean {
-        const search = filterValue.toLowerCase();
-        return (
-            row.original.reference.toLowerCase().includes(search)
-        );
-    }
-
-    const columns: ColumnDef<Order, any>[] = [
-        columnHelper.accessor('id', {
-            header: 'ID',
-            cell: info => info.getValue(),
-        }),
-        columnHelper.accessor('reference', {
-            header: 'Référence',
-            cell: info => info.getValue(),
-        }),
-        columnHelper.accessor('amount', {
-            header: 'Montant',
-            cell: info => info.getValue(),
-        }),
-        columnHelper.accessor('products_count', {
-            header: 'Produits',
-            cell: info => info.getValue(),
-        }),
-        columnHelper.accessor('date', {
-            header: 'Commandé le',
-            cell: info => new Date(info.getValue()).toLocaleDateString('fr-FR'),
-        }),
-        columnHelper.accessor('created_at', {
-            header: 'Créé le',
-            cell: info => new Date(info.getValue()).toLocaleDateString('fr-FR'),
-        }),
-        columnHelper.accessor('updated_at', {
-            header: 'Modifié le',
-            cell: info => new Date(info.getValue()).toLocaleDateString('fr-FR'),
-        }),
-        {
-            header: 'Actions',
-            id: 'actions',
-            cell: ({ row }) => (
-                <>
-                    <div className="flex gap-2">
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                                setData({
-                                    product_ids: row.original.products?.map(p => p.id) ?? [],
-                                });
-                                setIsEditMode(true);
-                                setCurrentOrderId(row.original.id);
-                                setDialogOpen(true);
-                            }}
-                        >
-                            <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => {
-                                setOrderToDelete(row.original);
-                                setAlertDialogOpen(true);
-                            }}
-                        >
-                            <Trash2 className="w-4 h-4" />
-                        </Button>
-                    </div>
-                    <AlertDialog open={alertDialogOpen} onOpenChange={setAlertDialogOpen}>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Voulez-vous vraiment supprimer cette vente ? Action irréversible.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                <AlertDialogAction
-                                    onClick={() => {
-                                        if (orderToDelete) {
-                                            router.delete(route('orders.destroy', orderToDelete.id));
-                                            setAlertDialogOpen(false);
-                                            setOrderToDelete(null);
-                                        }
-                                    }}
-                                >
-                                    Supprimer
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </>
-            ),
-        },
-    ];
-
-    const table = useReactTable({
-        data: orders,
-        columns,
-        getCoreRowModel: getCoreRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        globalFilterFn: customGlobalFilter,
-        state: {
-            sorting,
-            globalFilter,
-        },
-        onSortingChange: setSorting,
-        onGlobalFilterChange: setGlobalFilter,
-    })
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -234,31 +117,123 @@ export default function Index({ products, orders }: PageProps) {
                             className="w-64"
                         />
 
-                        <Dialog open={dialogOpen} onOpenChange={(open) => {
-                            setDialogOpen(open);
-                            if (!open) {
-                                reset();
-                                setIsEditMode(false);
-                                setCurrentOrderId(null);
-                            }
-                        }}>
+                        <Dialog
+                            open={dialogOpen}
+                            onOpenChange={(open) => {
+                                setDialogOpen(open);
+                                if (!open) {
+                                    reset();
+                                    setIsEditMode(false);
+                                    setCurrentOrderId(null);
+                                    setProductSearch('');
+                                }
+                            }}
+                        >
                             <DialogTrigger asChild>
                                 <Button>
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Ajouter
+                                    <Plus className="w-4 h-4 mr-2" /> Ajouter
                                 </Button>
                             </DialogTrigger>
-                            <DialogContent>
+                            <DialogContent className="w-[800px]">
                                 <DialogHeader>
                                     <DialogTitle>{isEditMode ? 'Modifier la vente' : 'Ajouter une vente'}</DialogTitle>
                                 </DialogHeader>
                                 <div className="space-y-6">
+                                    <div className="space-y-1">
+                                        <Label htmlFor="product_search">Rechercher un produit</Label>
+                                        <Input
+                                            id="product_search"
+                                            placeholder="Tapez le nom du produit..."
+                                            value={productSearch}
+                                            onChange={e => setProductSearch(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="flex gap-4">
+                                        <div className="flex-1 space-y-2 max-h-64 overflow-y-auto border rounded-md p-2">
+                                            {products
+                                                .filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()))
+                                                .sort((a, b) => {
+                                                    // Trier pour mettre en haut ceux qui sont sélectionnés
+                                                    const aSelected = data.product_ids.includes(a.id) ? -1 : 1;
+                                                    const bSelected = data.product_ids.includes(b.id) ? -1 : 1;
+                                                    return aSelected - bSelected;
+                                                })
+                                                .slice(0, maxToShow)
+                                                .map(product => {
+                                                    const selected = data.product_ids.includes(product.id);
+                                                    return (
+                                                        <label key={product.id} className="flex items-center gap-2 cursor-pointer">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selected}
+                                                                onChange={() => {
+                                                                    if (selected) {
+                                                                        setData({
+                                                                            ...data,
+                                                                            product_ids: data.product_ids.filter(id => id !== product.id),
+                                                                            product_quantities: Object.fromEntries(
+                                                                                Object.entries(data.product_quantities).filter(([id]) => Number(id) !== product.id)
+                                                                            )
+                                                                        });
+                                                                    } else {
+                                                                        setData({
+                                                                            ...data,
+                                                                            product_ids: [...data.product_ids, product.id],
+                                                                            product_quantities: {
+                                                                                ...data.product_quantities,
+                                                                                [product.id]: 1
+                                                                            }
+                                                                        });
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <span className="flex flex-col">
+                                                                <span className="font-medium">{product.name}</span>
+                                                                <span className="text-xs text-muted-foreground">{currencyFormatter(product.selling_price)}</span>
+                                                            </span>
+                                                        </label>
+                                                    )
+                                                })}
+                                            {products.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase())).length === 0 && (
+                                                <p className="text-center text-sm italic text-muted-foreground">
+                                                    Aucun produit trouvé.
+                                                </p>
+                                            )}
+                                        </div>
 
-
+                                        <div className="w-48 space-y-2 border rounded-md p-2">
+                                            <p className="font-medium mb-2">Quantités</p>
+                                            {data.product_ids.length === 0 && (
+                                                <p className="text-sm italic text-muted-foreground">Sélectionnez des produits.</p>
+                                            )}
+                                            {data.product_ids.map(productId => {
+                                                const product = products.find(p => p.id === productId);
+                                                return product ? (
+                                                    <div key={productId} className="flex items-center gap-2">
+                                                        <span className="flex-1 truncate text-sm">{product.name}</span>
+                                                        <Input
+                                                            type="number"
+                                                            min="1"
+                                                            className="w-16 h-8 px-1 py-0 text-sm"
+                                                            value={data.product_quantities[productId] ?? 1}
+                                                            onChange={e => {
+                                                                const qty = parseInt(e.target.value, 10);
+                                                                setData('product_quantities', {
+                                                                    ...data.product_quantities,
+                                                                    [productId]: qty > 0 ? qty : 1
+                                                                });
+                                                            }}
+                                                        />
+                                                    </div>
+                                                ) : null;
+                                            })}
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">{data.product_ids.length} produit(s) sélectionné(s)</p>
                                 </div>
                                 <div className="flex justify-end">
                                     <Button onClick={handleAddOrEditOrder} disabled={processing}>
-                                        {processing && <Loader2Icon className="animate-spin" />}
+                                        {processing && <Loader2Icon className="animate-spin mr-2" />}
                                         {processing ? 'Enregistrement...' : 'Enregistrer'}
                                     </Button>
                                 </div>
@@ -267,65 +242,49 @@ export default function Index({ products, orders }: PageProps) {
                     </div>
                 </div>
 
-                <div className="border rounded-md overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            {table.getHeaderGroups().map(headerGroup => (
-                                <TableRow key={headerGroup.id}>
-                                    {headerGroup.headers.map(header => (
-                                        <TableHead key={header.id}>
-                                            {flexRender(header.column.columnDef.header, header.getContext())}
-                                        </TableHead>
-                                    ))}
-                                </TableRow>
-                            ))}
-                        </TableHeader>
+                <OrdersTable
+                    orders={orders}
+                    globalFilter={globalFilter}
+                    setGlobalFilter={setGlobalFilter}
+                    onEdit={(order) => {
+                        setData({
+                            product_ids: order.products?.map(p => p.id) ?? [],
+                            product_quantities: order.products?.reduce((acc, product) => {
+                                acc[product.id] = product.pivot?.quantity ?? 1;
+                                return acc;
+                            }, {} as Record<number, number>) ?? {}
+                        });
+                        setIsEditMode(true);
+                        setCurrentOrderId(order.id);
+                        setDialogOpen(true);
+                    }}
+                />
 
-                        <TableBody>
-                            {table.getRowModel().rows.length > 0 ? (
-                                table.getRowModel().rows.map(row => (
-                                    <TableRow key={row.id}>
-                                        {row.getVisibleCells().map(cell => (
-                                            <TableCell key={cell.id}>
-                                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                            </TableCell>
-                                        ))}
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={table.getAllColumns().length} className="text-center italic text-muted-foreground py-6">
-                                        Aucune vente trouvée.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-
-                <div className="flex items-center justify-between mt-4">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={!table.getCanPreviousPage()}
-                        onClick={() => table.previousPage()}
-                    >
-                        Précédent
-                    </Button>
-                    {table.getRowModel().rows.length > 0 &&
-                        <span className="text-sm">
-                            Page {table.getState().pagination.pageIndex + 1} sur {table.getPageCount()}
-                        </span>}
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={!table.getCanNextPage()}
-                        onClick={() => table.nextPage()}
-                    >
-                        Suivant
-                    </Button>
-                </div>
+                <AlertDialog open={alertDialogOpen} onOpenChange={setAlertDialogOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Voulez-vous vraiment supprimer cette vente ? Action irréversible.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={() => {
+                                    if (orderToDelete) {
+                                        router.delete(route('orders.destroy', orderToDelete.id));
+                                        setAlertDialogOpen(false);
+                                        setOrderToDelete(null);
+                                    }
+                                }}
+                            >
+                                Supprimer
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         </AppLayout>
-    )
+    );
 }

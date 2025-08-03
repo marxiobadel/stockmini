@@ -68,6 +68,7 @@ export interface Supplier {
 export interface Product {
     id: number;
     name: string;
+    quantity: number;
     quantity_in_stock: number;
     description: string | null;
     selling_price: number;
