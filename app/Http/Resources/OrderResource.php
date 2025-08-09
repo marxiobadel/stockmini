@@ -24,6 +24,9 @@ class OrderResource extends JsonResource
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
+                    'unity' => [
+                        'name' => $product->unity->name,
+                    ],
                     'pivot' => [
                         'quantity' => $product->pivot->quantity,
                         'price' => $product->pivot->price,
@@ -32,6 +35,7 @@ class OrderResource extends JsonResource
             }),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'customer' => new CustomerResource($this->customer),
         ];
     }
 }

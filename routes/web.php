@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
@@ -12,9 +13,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::resource('categories', CategoryController::class)->except(['edit', 'create', 'show']);
     Route::resource('suppliers', SupplierController::class)->except(['edit', 'create', 'show']);
-    Route::resource('products', ProductController::class)->except(['edit', 'create', 'show']);
+    Route::resource('products', ProductController::class)->except(['edit', 'create']);
     Route::resource('stocks', StockController::class)->except(['edit', 'create', 'show']);
     Route::resource('orders', OrderController::class)->except(['edit', 'create']);
+    Route::resource('customers', CustomerController::class)->except(['edit', 'create']);
     Route::get('/orders/{order}/print', [OrderController::class, 'print'])->name('orders.print');
 });
 

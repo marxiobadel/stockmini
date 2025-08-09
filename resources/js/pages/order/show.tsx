@@ -1,5 +1,5 @@
 import AppLayout from "@/layouts/app-layout";
-import { currencyFormatter } from "@/lib/utils";
+import { currencyFormatter, plural } from "@/lib/utils";
 import { BreadcrumbItem, Order } from "@/types";
 import { Head } from "@inertiajs/react";
 import { Button } from "@/components/ui/button";
@@ -65,7 +65,7 @@ export default function Show({ order }: PageProps) {
                                 {order.products?.map(product => (
                                     <tr key={product.id} className="border-t">
                                         <td className="px-4 py-2">{product.name}</td>
-                                        <td className="px-4 py-2">{product.pivot?.quantity ?? 1}</td>
+                                        <td className="px-4 py-2">{plural(product.pivot?.quantity ?? 1, product.unity.name)}</td>
                                         <td className="px-4 py-2">
                                             {product.pivot ? currencyFormatter(product.pivot.price) : "-"}
                                         </td>

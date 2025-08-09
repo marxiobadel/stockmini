@@ -131,7 +131,7 @@ export default function Index({ products, orders }: PageProps) {
                         >
                             <DialogTrigger asChild>
                                 <Button>
-                                    <Plus className="w-4 h-4 mr-2" /> Ajouter
+                                    <Plus className="w-4 h-4 mr-2" /> Ajouter une vente
                                 </Button>
                             </DialogTrigger>
                             <DialogContent className="w-[800px]">

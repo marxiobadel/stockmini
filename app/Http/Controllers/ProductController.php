@@ -14,10 +14,17 @@ class ProductController extends Controller
 {
     public function index()
     {
-        return Inertia::render('products', [
+        return Inertia::render('product/index', [
             'unities' => Unity::latest()->get(),
             'categories' => Category::latest()->get(),
             'products' => ProductResource::collection(Product::with('category')->latest()->get())
+        ]);
+    }
+
+    public function show(Product $product)
+    {
+        return Inertia::render('product/show', [
+            'product' => $product->toResource(ProductResource::class)
         ]);
     }
 

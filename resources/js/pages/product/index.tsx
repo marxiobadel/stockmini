@@ -2,7 +2,7 @@
 
 import AppLayout from '@/layouts/app-layout';
 import { type Product, type BreadcrumbItem, Category, Unity } from '@/types';
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useReactTable, getCoreRowModel, getPaginationRowModel, getSortedRowModel, flexRender, createColumnHelper, ColumnDef } from '@tanstack/react-table';
 import type { SortingState } from '@tanstack/react-table'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,7 +10,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Pencil, Trash2, Plus, Loader2Icon, FileWarning } from 'lucide-react'
+import { Pencil, Trash2, Plus, Loader2Icon, FileWarning, Eye } from 'lucide-react'
 import React from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
@@ -166,6 +166,11 @@ export default function Index({ products, categories, unities }: PageProps) {
             cell: ({ row }) => (
                 <>
                     <div className="flex gap-2">
+                        <Link href={route('products.show', { product: row.original.id })}>
+                            <Button size="sm" variant="outline">
+                                <Eye className="w-4 h-4" />
+                            </Button>
+                        </Link>
                         <Button
                             size="sm"
                             variant="outline"
@@ -267,7 +272,7 @@ export default function Index({ products, categories, unities }: PageProps) {
                             <DialogTrigger asChild>
                                 <Button>
                                     <Plus className="w-4 h-4 mr-2" />
-                                    Ajouter
+                                    Ajouter un produit
                                 </Button>
                             </DialogTrigger>
                             <DialogContent>
