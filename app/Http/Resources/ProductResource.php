@@ -40,6 +40,7 @@ class ProductResource extends JsonResource
                 'created_at' => $this->unity->created_at,
                 'updated_at' => $this->unity->updated_at,
             ],
+            'specific_prices' => SpecificPriceResource::collection($this->specificPrices)
         ];
     }
 }

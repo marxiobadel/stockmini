@@ -177,11 +177,23 @@ return [
     */
 
     'custom' => [
-        'attribute-name' => [
-            'rule-name' => 'custom-message',
+        'specific_prices.*.start_date' => [
+            'required' => 'Le champ date de début est requis.',
+            'date' => 'Le champ date de début doit être une date valide.',
+        ],
+        'specific_prices.*.end_date' => [
+            'date' => 'Le champ date de fin doit être une date valide.',
+            'after_or_equal' => 'La date de fin doit être supérieur ou égale à la date de début.'
+        ],
+        'specific_prices.*.reduction_value' => [
+            'required' => 'Le champ valeur de réduction est requis.',
+            'numeric' => 'Le champ valeur de réduction doit être un nombre.',
+        ],
+        'specific_prices.*.from_quantity' => [
+            'required' => 'Le champ quantité minimale est requis.',
+            'integer' => 'Le champ quantité minimale doit être un entier.',
         ],
     ],
-
     /*
     |--------------------------------------------------------------------------
     | Custom Validation Attributes

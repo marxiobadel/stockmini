@@ -84,6 +84,7 @@ export interface Product {
         quantity: number;
         price: number;
     },
+    specific_prices: SpecificPrice[];
 }
 
 export interface Stock {
@@ -115,3 +116,13 @@ export interface Order {
     products_count: number;
     customer?: User;
 };
+
+export interface SpecificPrice {
+    id?: number;
+    start_date: string | Date | null; // ou Date selon traitement
+    end_date: string | Date | null;
+    reduction_type: "percent" | "amount";
+    reduction_value: number | "";
+    from_quantity: number;
+    customer_ids: number[];
+}

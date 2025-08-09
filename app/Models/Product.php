@@ -59,8 +59,8 @@ class Product extends Model
         });
     }
 
-    public function movements()
+    public function specificPrices()
     {
-        return $this->hasMany(Movement::class);
+        return $this->hasMany(SpecificPrice::class);
     }
 }
