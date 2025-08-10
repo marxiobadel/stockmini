@@ -27,6 +27,10 @@ export default function Show({ order }: PageProps) {
                         <p className="text-black text-sm">
                             Date : {new Date(order.created_at).toLocaleDateString('fr-FR')}
                         </p>
+                        {order.customer &&
+                        <p className="text-black text-sm">
+                            Client : {order.customer.name}
+                        </p>}
                         <p className="text-black text-md">
                             Total : <span className="font-extrabold">{currencyFormatter(order.amount)}</span>
                         </p>
