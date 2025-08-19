@@ -15,12 +15,25 @@ use Inertia\Inertia;
 
 class ProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $query = Product::with('category');
+        if ($request->filled('sort') && $request->filled('direction')) {
+            $query->orderBy($request->sort, $request->direction);
+        } else {
+            $query->latest();
+        }
+
+        if ($request->filled('search')) {
+            $query->whereAny(['name', 'description'], 'like', '%' . $request->search . '%');
+        }
+
+        $products = $query->paginate(3)->withQueryString();
+
         return Inertia::render('product/index', [
             'unities' => Unity::latest()->get(),
             'categories' => Category::latest()->get(),
-            'products' => ProductResource::collection(Product::with('category')->latest()->get())
+            'products' => ProductResource::collection($products)->response()->getData(true),
         ]);
     }
 
@@ -46,7 +59,8 @@ class ProductController extends Controller
 
         Product::create($validated);
 
-        return redirect()->back()->with('success', 'Produit ajouté avec succès.');
+        return redirect()->route('products.index', ['page' => 1])
+                        ->with('success', 'Produit ajouté avec succès.');
     }
 
     public function update(Request $request, Product $product)

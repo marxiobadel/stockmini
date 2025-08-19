@@ -3,21 +3,17 @@
 import AppLayout from '@/layouts/app-layout';
 import { type Product, type BreadcrumbItem, Category, Unity } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { useReactTable, getCoreRowModel, getPaginationRowModel, getSortedRowModel, flexRender, createColumnHelper, ColumnDef } from '@tanstack/react-table';
-import type { SortingState } from '@tanstack/react-table'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import { type SortingState, useReactTable, getCoreRowModel, getPaginationRowModel, createColumnHelper, ColumnDef } from '@tanstack/react-table';
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Pencil, Trash2, Plus, Loader2Icon, FileWarning, Eye } from 'lucide-react'
-import React from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
+import { Pencil, Trash2, Eye } from 'lucide-react'
+import React, { useEffect } from 'react'
 import { useForm } from '@inertiajs/react'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { currencyFormatter, plural } from '@/lib/utils';
-import { Textarea } from '@/components/ui/textarea';
+import ProductTable from './table';
+import ProductDialog from './modal';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Tableau de bord', href: route('dashboard') },
@@ -25,7 +21,11 @@ const breadcrumbs: BreadcrumbItem[] = [
 ]
 
 interface PageProps {
-    products: Product[];
+    products: {
+        data: Product[];
+        links: any[];
+        meta: { current_page: number; last_page: number; total: number; per_page: number };
+    };
     categories: Category[];
     unities: Unity[];
 }
@@ -33,9 +33,10 @@ interface PageProps {
 const columnHelper = createColumnHelper<Product>()
 
 export default function Index({ products, categories, unities }: PageProps) {
-    const [globalFilter, setGlobalFilter] = React.useState('')
     const [dialogOpen, setDialogOpen] = React.useState(false);
-    const [sorting, setSorting] = React.useState<SortingState>([])
+    const [sorting, setSorting] = React.useState<SortingState>([]);
+
+    const [search, setSearch] = React.useState("");
 
     // Pour modifier / ajouter via la même modale
     const [isEditMode, setIsEditMode] = React.useState(false)
@@ -54,13 +55,6 @@ export default function Index({ products, categories, unities }: PageProps) {
         category_id: '',
         unity_id: ''
     });
-
-    const filteredData = React.useMemo(() => {
-        return products.filter(s =>
-            s.name.toLowerCase().includes(globalFilter.toLowerCase()) ||
-            s.description?.toLowerCase().includes(globalFilter.toLowerCase())
-        )
-    }, [products, globalFilter])
 
     const handleAddOrEditProduct = () => {
         if (isEditMode && currentProductId) {
@@ -234,16 +228,25 @@ export default function Index({ products, categories, unities }: PageProps) {
     ]
 
     const table = useReactTable({
-        data: filteredData,
+        data: products.data,
         columns,
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        state: {
-            sorting,
-        },
+        state: { sorting },
         onSortingChange: setSorting,
-    })
+    });
+
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            router.visit(route('products.index'), {
+                method: "get",
+                data: { search, page: 1 },
+                preserveState: true,
+            })
+        }, 500)
+
+        return () => clearTimeout(timeout)
+    }, [search])
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -256,229 +259,32 @@ export default function Index({ products, categories, unities }: PageProps) {
                     <div className="flex gap-2 items-center">
                         <Input
                             placeholder="Rechercher..."
-                            value={globalFilter}
-                            onChange={e => setGlobalFilter(e.target.value)}
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
                             className="w-64"
                         />
 
-                        <Dialog open={dialogOpen} onOpenChange={(open) => {
-                            setDialogOpen(open);
-                            if (!open) {
-                                reset();
-                                setIsEditMode(false);
-                                setCurrentProductId(null);
-                            }
-                        }}>
-                            <DialogTrigger asChild>
-                                <Button>
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Ajouter un produit
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                    <DialogTitle>{isEditMode ? 'Modifier le produit' : 'Ajouter un produit'}</DialogTitle>
-                                </DialogHeader>
-                                <div className="space-y-6">
-                                    <div className="space-y-1">
-                                        <Label htmlFor="name">Nom <span className="text-red-500">*</span></Label>
-                                        <Input
-                                            id="name"
-                                            value={data.name}
-                                            onChange={e => setData('name', e.target.value)}
-                                            placeholder="Ex: Riz bijou 50 kg ..."
-                                        />
-                                        {errors.name && (
-                                            <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
-                                                <FileWarning className="w-4 h-4" />
-                                                {errors.name}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label htmlFor="description">Description</Label>
-                                        <Textarea
-                                            id="description"
-                                            value={data.description}
-                                            onChange={e => setData('description', e.target.value)}
-                                            placeholder="Brève description du produit"
-                                            rows={4}
-                                        />
-                                        {errors.description && (
-                                            <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
-                                                <FileWarning className="w-4 h-4" />
-                                                {errors.description}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <div className="flex gap-4">
-                                        <div className="flex-1 space-y-1">
-                                            <Label htmlFor="selling_price">Prix de vente <span className="text-red-500">*</span></Label>
-                                            <Input
-                                                id="selling_price"
-                                                type='number'
-                                                value={data.selling_price}
-                                                onChange={e => setData('selling_price', e.target.value)}
-                                            />
-                                            {errors.selling_price && (
-                                                <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
-                                                    <FileWarning className="w-4 h-4" />
-                                                    {errors.selling_price}
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        <div className="flex-1 space-y-1">
-                                            <Label htmlFor="purchasing_price">Prix d'achat</Label>
-                                            <Input
-                                                id="purchasing_price"
-                                                type='number'
-                                                value={data.purchasing_price}
-                                                onChange={e => setData('purchasing_price', e.target.value)}
-                                            />
-                                            {errors.purchasing_price && (
-                                                <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
-                                                    <FileWarning className="w-4 h-4" />
-                                                    {errors.purchasing_price}
-                                                </p>
-                                            )}
-                                        </div>
-                                        <div className="flex-1 space-y-1">
-                                            <Label htmlFor="threshold_alert">Stock d'alerte <span className="text-red-500">*</span></Label>
-                                            <Input
-                                                id="threshold_alert"
-                                                type='number'
-                                                value={data.threshold_alert}
-                                                onChange={e => setData('threshold_alert', e.target.value)}
-                                            />
-                                            {errors.threshold_alert && (
-                                                <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
-                                                    <FileWarning className="w-4 h-4" />
-                                                    {errors.threshold_alert}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-4">
-                                        <div className="flex-1 space-y-1">
-                                            <Label htmlFor="category_id">Catégorie <span className="text-red-500">*</span></Label>
-                                            <Select
-                                                value={data.category_id}
-                                                onValueChange={(value) => setData('category_id', value)}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Choisissez une catégorie" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {categories.map(category => (
-                                                        <SelectItem key={category.id} value={String(category.id)}>
-                                                            {category.name}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            {errors.category_id && (
-                                                <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
-                                                    <FileWarning className="w-4 h-4" />
-                                                    {errors.category_id}
-                                                </p>
-                                            )}
-                                        </div>
-                                        <div className="flex-1 space-y-1">
-                                            <Label htmlFor="unity_id">Unité <span className="text-red-500">*</span></Label>
-                                            <Select
-                                                value={data.unity_id}
-                                                onValueChange={(value) => setData('unity_id', value)}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Choisissez une unité" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {unities.map(unity => (
-                                                        <SelectItem key={unity.id} value={String(unity.id)}>
-                                                            {unity.name}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                            {errors.unity_id && (
-                                                <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
-                                                    <FileWarning className="w-4 h-4" />
-                                                    {errors.unity_id}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-end">
-                                        <Button onClick={handleAddOrEditProduct} disabled={processing}>
-                                            {processing && <Loader2Icon className="animate-spin" />}
-                                            {processing ? 'Enregistrement...' : 'Enregistrer'}
-                                        </Button>
-                                    </div>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
+                        <ProductDialog
+                            open={dialogOpen}
+                            setOpen={setDialogOpen}
+                            isEditMode={isEditMode}
+                            data={data}
+                            setData={setData}
+                            errors={errors}
+                            categories={categories}
+                            unities={unities}
+                            processing={processing}
+                            handleSubmit={handleAddOrEditProduct}
+                            reset={() => {
+                                reset()
+                                setIsEditMode(false)
+                                setCurrentProductId(null)
+                            }}
+                        />
                     </div>
                 </div>
 
-                <div className="border rounded-md overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            {table.getHeaderGroups().map(headerGroup => (
-                                <TableRow key={headerGroup.id}>
-                                    {headerGroup.headers.map(header => (
-                                        <TableHead key={header.id}>
-                                            {flexRender(header.column.columnDef.header, header.getContext())}
-                                        </TableHead>
-                                    ))}
-                                </TableRow>
-                            ))}
-                        </TableHeader>
-
-                        <TableBody>
-                            {table.getRowModel().rows.length > 0 ? (
-                                table.getRowModel().rows.map(row => (
-                                    <TableRow key={row.id}>
-                                        {row.getVisibleCells().map(cell => (
-                                            <TableCell key={cell.id}>
-                                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                            </TableCell>
-                                        ))}
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={table.getAllColumns().length} className="text-center italic text-muted-foreground py-6">
-                                        Aucun produit trouvé.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
-
-                <div className="flex items-center justify-between mt-4">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={!table.getCanPreviousPage()}
-                        onClick={() => table.previousPage()}
-                    >
-                        Précédent
-                    </Button>
-                    {table.getRowModel().rows.length > 0 &&
-                        <span className="text-sm">
-                            Page {table.getState().pagination.pageIndex + 1} sur {table.getPageCount()}
-                        </span>}
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={!table.getCanNextPage()}
-                        onClick={() => table.nextPage()}
-                    >
-                        Suivant
-                    </Button>
-                </div>
+                <ProductTable table={table} products={products} />
             </div>
         </AppLayout>
     )

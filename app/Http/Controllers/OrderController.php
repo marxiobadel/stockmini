@@ -40,7 +40,8 @@ class OrderController extends Controller
         $order->load('products');
 
         // Générer le PDF depuis une vue Blade
-        $pdf = Pdf::loadView('pdfs.order-ticket', compact('order'));
+        $pdf = Pdf::loadView('pdfs.order-ticket', compact('order'))
+                    ->setPaper([0, 0, 226.77, 1200]);
 
         // Retourner le PDF en téléchargement ou affichage
         return $pdf->stream('ticket_vente_' . (string) $order->id . '.pdf');

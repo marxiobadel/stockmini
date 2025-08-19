@@ -30,8 +30,9 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { currencyFormatter } from '@/lib/utils';
-import OrdersTable from './orders-table';
+import OrdersTable from './table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Tableau de bord', href: route('dashboard') },
@@ -64,9 +65,6 @@ export default function Index({ products, orders, customers }: PageProps) {
     });
 
     const [productPrices, setProductPrices] = React.useState<Record<number, number>>({});
-
-    const selectedCount = data.product_ids.length;
-    const maxToShow = selectedCount > 8 ? selectedCount : 8;
 
     const handleAddOrEditOrder = () => {
         if (isEditMode && currentOrderId) {
@@ -238,88 +236,91 @@ export default function Index({ products, orders, customers }: PageProps) {
                                         />
                                     </div>
                                     <div className="flex gap-4">
-                                        <div className="flex-1 space-y-2 max-h-64 overflow-y-auto border rounded-md p-2">
-                                            {products
-                                                .filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()))
-                                                .sort((a, b) => {
-                                                    // Trier pour mettre en haut ceux qui sont sélectionnés
-                                                    const aSelected = data.product_ids.includes(a.id) ? -1 : 1;
-                                                    const bSelected = data.product_ids.includes(b.id) ? -1 : 1;
-                                                    return aSelected - bSelected;
-                                                })
-                                                .slice(0, maxToShow)
-                                                .map(product => {
-                                                    const selected = data.product_ids.includes(product.id);
-                                                    return (
-                                                        <label key={product.id} className="flex items-center gap-2 cursor-pointer">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={selected}
-                                                                onChange={() => {
-                                                                    if (selected) {
-                                                                        setData({
-                                                                            ...data,
-                                                                            product_ids: data.product_ids.filter(id => id !== product.id),
-                                                                            product_quantities: Object.fromEntries(
-                                                                                Object.entries(data.product_quantities).filter(([id]) => Number(id) !== product.id)
-                                                                            )
-                                                                        });
-                                                                    } else {
-                                                                        setData({
-                                                                            ...data,
-                                                                            product_ids: [...data.product_ids, product.id],
-                                                                            product_quantities: {
-                                                                                ...data.product_quantities,
-                                                                                [product.id]: 1
-                                                                            }
-                                                                        });
-                                                                    }
+                                        <ScrollArea className="flex-1 max-h-64 border rounded-md p-2">
+                                            <div className="space-y-2">
+                                                {products
+                                                    .filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()))
+                                                    .sort((a, b) => {
+                                                        // Trier pour mettre en haut ceux qui sont sélectionnés
+                                                        const aSelected = data.product_ids.includes(a.id) ? -1 : 1;
+                                                        const bSelected = data.product_ids.includes(b.id) ? -1 : 1;
+                                                        return aSelected - bSelected;
+                                                    })
+                                                    .map(product => {
+                                                        const selected = data.product_ids.includes(product.id);
+                                                        return (
+                                                            <label key={product.id} className="flex items-center gap-2 cursor-pointer">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selected}
+                                                                    onChange={() => {
+                                                                        if (selected) {
+                                                                            setData({
+                                                                                ...data,
+                                                                                product_ids: data.product_ids.filter(id => id !== product.id),
+                                                                                product_quantities: Object.fromEntries(
+                                                                                    Object.entries(data.product_quantities).filter(([id]) => Number(id) !== product.id)
+                                                                                )
+                                                                            });
+                                                                        } else {
+                                                                            setData({
+                                                                                ...data,
+                                                                                product_ids: [...data.product_ids, product.id],
+                                                                                product_quantities: {
+                                                                                    ...data.product_quantities,
+                                                                                    [product.id]: 1
+                                                                                }
+                                                                            });
+                                                                        }
+                                                                    }}
+                                                                />
+                                                                <span className="flex flex-col">
+                                                                    <span className="font-medium">{product.name}</span>
+                                                                    <span className="text-xs text-muted-foreground">
+                                                                        {currencyFormatter(productPrices[product.id] ?? product.selling_price)}
+                                                                    </span>
+                                                                </span>
+                                                            </label>
+                                                        )
+                                                    })}
+                                                {products.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase())).length === 0 && (
+                                                    <p className="text-center text-sm italic text-muted-foreground">
+                                                        Aucun produit trouvé.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </ScrollArea>
+
+                                        <ScrollArea className="w-72 border max-h-64 rounded-md p-2">
+                                            <div className="space-y-2">
+                                                <p className="font-medium mb-2">Quantités</p>
+                                                {data.product_ids.length === 0 && (
+                                                    <p className="text-sm italic text-muted-foreground">Sélectionnez des produits.</p>
+                                                )}
+                                                {data.product_ids.map(productId => {
+                                                    const product = products.find(p => p.id === productId);
+                                                    return product ? (
+                                                        <div key={productId} className="flex items-center gap-2">
+                                                            <span className="flex-1 truncate text-sm">{product.name}</span>
+                                                            <Input
+                                                                type="number"
+                                                                min="1"
+                                                                className="w-16 h-8 px-1 py-0 text-sm"
+                                                                value={data.product_quantities[productId] ?? 1}
+                                                                onChange={e => {
+                                                                    const qty = parseInt(e.target.value, 10);
+                                                                    setData('product_quantities', {
+                                                                        ...data.product_quantities,
+                                                                        [productId]: qty > 0 ? qty : 1
+                                                                    });
                                                                 }}
                                                             />
-                                                            <span className="flex flex-col">
-                                                                <span className="font-medium">{product.name}</span>
-                                                                <span className="text-xs text-muted-foreground">
-                                                                    {currencyFormatter(productPrices[product.id] ?? product.selling_price)}
-                                                                </span>
-                                                            </span>
-                                                        </label>
-                                                    )
+                                                            <span className="flex-1 text-sm">{products.find(p => p.id == productId)?.unity.name}</span>
+                                                        </div>
+                                                    ) : null;
                                                 })}
-                                            {products.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase())).length === 0 && (
-                                                <p className="text-center text-sm italic text-muted-foreground">
-                                                    Aucun produit trouvé.
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        <div className="w-72 space-y-2 border rounded-md p-2">
-                                            <p className="font-medium mb-2">Quantités</p>
-                                            {data.product_ids.length === 0 && (
-                                                <p className="text-sm italic text-muted-foreground">Sélectionnez des produits.</p>
-                                            )}
-                                            {data.product_ids.map(productId => {
-                                                const product = products.find(p => p.id === productId);
-                                                return product ? (
-                                                    <div key={productId} className="flex items-center gap-2">
-                                                        <span className="flex-1 truncate text-sm">{product.name}</span>
-                                                        <Input
-                                                            type="number"
-                                                            min="1"
-                                                            className="w-16 h-8 px-1 py-0 text-sm"
-                                                            value={data.product_quantities[productId] ?? 1}
-                                                            onChange={e => {
-                                                                const qty = parseInt(e.target.value, 10);
-                                                                setData('product_quantities', {
-                                                                    ...data.product_quantities,
-                                                                    [productId]: qty > 0 ? qty : 1
-                                                                });
-                                                            }}
-                                                        />
-                                                        <span className="flex-1 text-sm">{products.find(p => p.id == productId)?.unity.name}</span>
-                                                    </div>
-                                                ) : null;
-                                            })}
-                                        </div>
+                                            </div>
+                                        </ScrollArea>
                                     </div>
                                     <p className="text-sm text-muted-foreground">{data.product_ids.length} produit(s) sélectionné(s)</p>
                                 </div>

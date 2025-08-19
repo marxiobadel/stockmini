@@ -32,30 +32,25 @@ import {
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Pencil, Trash2, Plus, Loader2Icon, BatteryWarning, FileWarning } from 'lucide-react'
+import { Pencil, Trash2, Plus, Loader2Icon, FileWarning, ChevronsUpDown, Check } from 'lucide-react'
 import React from 'react'
-
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { useForm } from '@inertiajs/react'
-
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { plural, cn } from '@/lib/utils';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { plural } from '@/lib/utils';
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+} from "@/components/ui/command"
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Tableau de bord', href: route('dashboard') },
@@ -284,21 +279,42 @@ export default function Index({ products, suppliers, stocks }: PageProps) {
 
                                     <div className="flex-1 space-y-1">
                                         <Label htmlFor="product_id">Produit <span className="text-red-500">*</span></Label>
-                                        <Select
-                                            value={data.product_id}
-                                            onValueChange={(value) => setData('product_id', value)}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Choisissez un produit" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {products.map(product => (
-                                                    <SelectItem key={product.id} value={String(product.id)}>
-                                                        {product.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    className="w-full justify-between"
+                                                >
+                                                    {data.product_id
+                                                        ? products.find(p => String(p.id) === data.product_id)?.name
+                                                        : "Choisissez un produit"}
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-full p-0">
+                                                <Command>
+                                                    <CommandInput placeholder="Rechercher un produit..." />
+                                                    <CommandEmpty>Aucun produit trouvé.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {products.map(product => (
+                                                            <CommandItem
+                                                                key={product.id}
+                                                                onSelect={() => setData("product_id", String(product.id))}
+                                                            >
+                                                                <Check
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        data.product_id === String(product.id) ? "opacity-100" : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {product.name}
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
                                         {errors.product_id && (
                                             <p className="text-sm text-red-600 flex items-center gap-1 mt-1">
                                                 <FileWarning className="w-4 h-4" />
