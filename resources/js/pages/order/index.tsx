@@ -119,25 +119,27 @@ export default function Index({ products, orders, customers }: PageProps) {
 
     React.useEffect(() => {
         const now = new Date();
-    
+
         const newPrices = data.product_ids.reduce((acc, productId) => {
             const product = products.find(p => p.id === productId);
             if (!product) return acc;
-    
+
             const qty = data.product_quantities[productId] ?? 1;
             let price = product.selling_price;
-    
+
             if (product.specific_prices?.length) {
                 const applicablePrices = product.specific_prices.filter(sp => {
                     const start = sp.start_date ? new Date(sp.start_date) : null;
                     const end = sp.end_date ? new Date(sp.end_date) : null;
                     const validDate = (!start || start <= now) && (!end || end >= now);
                     const validQuantity = qty >= sp.from_quantity;
-                    const clientMatch = sp.customer_ids.length === 0 || (data.customer_id && sp.customer_ids.includes(parseInt(data.customer_id)));
-    
+                    const clientMatch =
+                        sp.customer_ids.length === 0 ||
+                        (data.customer_id && sp.customer_ids.includes(parseInt(data.customer_id)));
+
                     return validDate && validQuantity && clientMatch;
                 });
-    
+
                 if (applicablePrices.length > 0) {
                     price = applicablePrices.reduce((best, sp) => {
                         let spPrice = product.selling_price;
@@ -150,24 +152,27 @@ export default function Index({ products, orders, customers }: PageProps) {
                     }, price);
                 }
             }
-    
+
             acc[productId] = price;
             return acc;
         }, {} as Record<number, number>);
-    
-        // Comparer avant de mettre à jour
-        const hasChanged = Object.keys(newPrices).some(productId => {
-            return productPrices[Number(productId)] !== newPrices[Number(productId)];
-        });
-    
-        if (hasChanged) {
-            setProductPrices(newPrices);
-            
-            if (!isEditMode) {
-                //setData('product_prices', newPrices);
+
+        // Fusionner uniquement les prix manquants
+        const merged = { ...data.product_prices };
+        let hasChanged = false;
+
+        Object.entries(newPrices).forEach(([pid, price]) => {
+            const id = Number(pid);
+            if (merged[id] === undefined) {
+                merged[id] = price;
+                hasChanged = true;
             }
+        });
+
+        if (hasChanged) {
+            setData('product_prices', merged);
         }
-    }, [data.customer_id, data.product_ids, data.product_quantities, products]);    
+    }, [data.customer_id, data.product_ids, data.product_quantities, products]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
