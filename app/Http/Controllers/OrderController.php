@@ -37,11 +37,11 @@ class OrderController extends Controller
     public function print(Order $order)
     {
         // Charger les relations nécessaires (par ex: products)
-        $order->load('products');
+        $order->load(['products', 'customer']);
 
         // Générer le PDF depuis une vue Blade
         $pdf = Pdf::loadView('pdfs.order-ticket', compact('order'))
-                    ->setPaper([0, 0, 226.77, 1200]);
+                    ->setPaper([0, 0, 300.77, 900]);
 
         // Retourner le PDF en téléchargement ou affichage
         return $pdf->stream('ticket_vente_' . (string) $order->id . '.pdf');
@@ -52,7 +52,7 @@ class OrderController extends Controller
         $validated = $request->validated();
 
         $customerId = $validated['customer_id'] ?? null;
-
+        
         try {
             DB::beginTransaction();
 
@@ -71,15 +71,15 @@ class OrderController extends Controller
                 'reference' => 'ORD-' . strtoupper(uniqid()),
                 'date' => now(),
                 'customer_id' => $customerId,
+                'status' => $validated['status'],
             ]);
 
             // Attacher les produits avec quantités et prix spécifiques
             foreach ($validated['product_ids'] as $productId) {
                 $quantity = $validated['product_quantities'][$productId] ?? 1;
+                $price = $validated['product_prices'][$productId] ?? 1;
 
-                $product = Product::findOrFail($productId);
-
-                $price = $product->selling_price;
+                /*$product = Product::findOrFail($productId);
 
                 $specificPriceQuery = $product->specificPrices()
                     ->whereDate('start_date', '<=', now())
@@ -105,7 +105,7 @@ class OrderController extends Controller
                     } elseif ($specificPrice->reduction_type === 'amount') {
                         $price = max(0, $product->selling_price - $specificPrice->reduction_value);
                     }
-                }
+                }*/
 
                 $order->products()->attach($productId, [
                     'quantity' => $quantity,
@@ -151,9 +151,9 @@ class OrderController extends Controller
                 }
 
                 // Prix spécifique selon client ou global
-                $price = $product->selling_price;
+                $price = $validated['product_prices'][$productId] ?? 1;
 
-                $specificPriceQuery = $product->specificPrices()
+                /*$specificPriceQuery = $product->specificPrices()
                     ->whereDate('start_date', '<=', now())
                     ->where(function ($q) {
                         $q->whereNull('end_date')->orWhere('end_date', '>=', now());
@@ -177,7 +177,7 @@ class OrderController extends Controller
                     } elseif ($specificPrice->reduction_type === 'amount') {
                         $price = max(0, $product->selling_price - $specificPrice->reduction_value);
                     }
-                }
+                }*/
 
                 $syncData[$productId] = [
                     'quantity' => $newQuantity,
@@ -185,7 +185,7 @@ class OrderController extends Controller
                 ];
             }
 
-            $order->update(['customer_id' => $customerId]);
+            $order->update(['customer_id' => $customerId, 'status' => $validated['status']]);
             $order->products()->sync($syncData);
 
             DB::commit();

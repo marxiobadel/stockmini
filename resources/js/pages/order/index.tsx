@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, Loader2Icon } from 'lucide-react'
 import React from 'react'
-
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
     Dialog,
     DialogContent,
@@ -29,7 +29,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { currencyFormatter } from '@/lib/utils';
+import { currencyFormatter, plural } from '@/lib/utils';
 import OrdersTable from './table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -55,13 +55,17 @@ export default function Index({ products, orders, customers }: PageProps) {
     const [productSearch, setProductSearch] = React.useState('');
 
     const { data, setData, post, put, processing, reset } = useForm<{
+        status: string;
         customer_id?: string;
         product_ids: number[];
         product_quantities: Record<number, number>; // id → quantité
+        product_prices: Record<number, number>;
     }>({
+        status: 'paid',
         customer_id: '',
         product_ids: [],
         product_quantities: {},
+        product_prices: {},
     });
 
     const [productPrices, setProductPrices] = React.useState<Record<number, number>>({});
@@ -108,36 +112,33 @@ export default function Index({ products, orders, customers }: PageProps) {
     const total = React.useMemo(() => {
         return data.product_ids.reduce((sum, productId) => {
             const qty = data.product_quantities[productId] ?? 1;
-            const price = productPrices[productId] ?? products.find(p => p.id === productId)?.selling_price ?? 0;
+            const price = data.product_prices[productId] ?? productPrices[productId] ?? products.find(p => p.id === productId)?.selling_price ?? 0;
             return sum + price * qty;
         }, 0);
-    }, [data.product_ids, data.product_quantities, productPrices]);
+    }, [data.product_ids, data.product_quantities, data.product_prices, productPrices]);
 
     React.useEffect(() => {
         const now = new Date();
-
+    
         const newPrices = data.product_ids.reduce((acc, productId) => {
             const product = products.find(p => p.id === productId);
             if (!product) return acc;
-
+    
             const qty = data.product_quantities[productId] ?? 1;
             let price = product.selling_price;
-
+    
             if (product.specific_prices?.length) {
-                // Filtrer les prix spécifiques applicables
                 const applicablePrices = product.specific_prices.filter(sp => {
                     const start = sp.start_date ? new Date(sp.start_date) : null;
                     const end = sp.end_date ? new Date(sp.end_date) : null;
                     const validDate = (!start || start <= now) && (!end || end >= now);
                     const validQuantity = qty >= sp.from_quantity;
-                    // Appliquer même si client non défini, ou si client dans la liste
                     const clientMatch = sp.customer_ids.length === 0 || (data.customer_id && sp.customer_ids.includes(parseInt(data.customer_id)));
-
+    
                     return validDate && validQuantity && clientMatch;
                 });
-
+    
                 if (applicablePrices.length > 0) {
-                    // Prendre la meilleure réduction (le prix le plus bas)
                     price = applicablePrices.reduce((best, sp) => {
                         let spPrice = product.selling_price;
                         if (sp.reduction_type === 'percent') {
@@ -149,13 +150,24 @@ export default function Index({ products, orders, customers }: PageProps) {
                     }, price);
                 }
             }
-
+    
             acc[productId] = price;
             return acc;
         }, {} as Record<number, number>);
-
-        setProductPrices(newPrices);
-    }, [data.customer_id, data.product_ids, data.product_quantities, products]);
+    
+        // Comparer avant de mettre à jour
+        const hasChanged = Object.keys(newPrices).some(productId => {
+            return productPrices[Number(productId)] !== newPrices[Number(productId)];
+        });
+    
+        if (hasChanged) {
+            setProductPrices(newPrices);
+            
+            if (!isEditMode) {
+                //setData('product_prices', newPrices);
+            }
+        }
+    }, [data.customer_id, data.product_ids, data.product_quantities, products]);    
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -195,35 +207,54 @@ export default function Index({ products, orders, customers }: PageProps) {
                                     <DialogTitle>{isEditMode ? 'Modifier la vente' : 'Ajouter une vente'}</DialogTitle>
                                 </DialogHeader>
                                 <div className="space-y-6">
-                                    <div className="space-y-1">
-                                        <Label htmlFor="customer_id">Client</Label>
-                                        <div className="flex items-center gap-2">
-                                            <Select
-                                                value={data.customer_id}
-                                                onValueChange={(value) => setData('customer_id', value)}
-                                            >
-                                                <SelectTrigger className="flex-1">
-                                                    <SelectValue placeholder="Sélectionner un client" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {customers.map(customer => (
-                                                        <SelectItem key={customer.id} value={String(customer.id)}>
-                                                            {customer.name}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-
-                                            {data.customer_id && (
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => setData('customer_id', '')}
-                                                    title="Retirer le client"
+                                    <div className="flex space-x-4">
+                                        <div className="w-1/2 space-y-1">
+                                            <Label htmlFor="customer_id">Client</Label>
+                                            <div className="flex items-center gap-2">
+                                                <Select
+                                                    value={data.customer_id}
+                                                    onValueChange={(value) => setData('customer_id', value)}
                                                 >
-                                                    ✕
-                                                </Button>
-                                            )}
+                                                    <SelectTrigger className="flex-1">
+                                                        <SelectValue placeholder="Sélectionner un client" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {customers.map(customer => (
+                                                            <SelectItem key={customer.id} value={String(customer.id)}>
+                                                                {customer.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+
+                                                {data.customer_id && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => setData('customer_id', '')}
+                                                        title="Retirer le client"
+                                                    >
+                                                        ✕
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="w-1/2 space-y-1">
+                                            <Label htmlFor="status">Statut</Label>
+                                            <div className="flex items-center gap-2">
+                                                <Select
+                                                    value={data.status}
+                                                    onValueChange={(value) => setData('status', value)}
+                                                >
+                                                    <SelectTrigger className="flex-1">
+                                                        <SelectValue placeholder="Sélectionner un statut" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value='paid'>Payé</SelectItem>
+                                                        <SelectItem value='pending'>En attente</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="space-y-1">
@@ -240,12 +271,12 @@ export default function Index({ products, orders, customers }: PageProps) {
                                             <div className="space-y-2">
                                                 {products
                                                     .filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()))
-                                                    .sort((a, b) => {
+                                                    /*.sort((a, b) => {
                                                         // Trier pour mettre en haut ceux qui sont sélectionnés
                                                         const aSelected = data.product_ids.includes(a.id) ? -1 : 1;
                                                         const bSelected = data.product_ids.includes(b.id) ? -1 : 1;
                                                         return aSelected - bSelected;
-                                                    })
+                                                    })*/
                                                     .map(product => {
                                                         const selected = data.product_ids.includes(product.id);
                                                         return (
@@ -277,7 +308,10 @@ export default function Index({ products, orders, customers }: PageProps) {
                                                                 <span className="flex flex-col">
                                                                     <span className="font-medium">{product.name}</span>
                                                                     <span className="text-xs text-muted-foreground">
-                                                                        {currencyFormatter(productPrices[product.id] ?? product.selling_price)}
+                                                                        stock: {plural(product.quantity_in_stock, product.unity?.name)}
+                                                                    </span>
+                                                                    <span className="text-xs text-muted-foreground">
+                                                                        P.U: {currencyFormatter(productPrices[product.id] ?? product.selling_price)}
                                                                     </span>
                                                                 </span>
                                                             </label>
@@ -291,9 +325,9 @@ export default function Index({ products, orders, customers }: PageProps) {
                                             </div>
                                         </ScrollArea>
 
-                                        <ScrollArea className="w-72 border max-h-64 rounded-md p-2">
+                                        <ScrollArea className="w-96 border max-h-64 rounded-md p-2">
                                             <div className="space-y-2">
-                                                <p className="font-medium mb-2">Quantités</p>
+                                                <p className="font-medium mb-2">Quantités / Prix</p>
                                                 {data.product_ids.length === 0 && (
                                                     <p className="text-sm italic text-muted-foreground">Sélectionnez des produits.</p>
                                                 )}
@@ -301,7 +335,14 @@ export default function Index({ products, orders, customers }: PageProps) {
                                                     const product = products.find(p => p.id === productId);
                                                     return product ? (
                                                         <div key={productId} className="flex items-center gap-2">
-                                                            <span className="flex-1 truncate text-sm">{product.name}</span>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <span className="flex-1 truncate text-sm">{product.name}</span>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    {products.find(p => p.id == productId)?.unity.name}
+                                                                </TooltipContent>
+                                                            </Tooltip>
                                                             <Input
                                                                 type="number"
                                                                 min="1"
@@ -315,7 +356,19 @@ export default function Index({ products, orders, customers }: PageProps) {
                                                                     });
                                                                 }}
                                                             />
-                                                            <span className="flex-1 text-sm">{products.find(p => p.id == productId)?.unity.name}</span>
+                                                            <Input
+                                                                type="number"
+                                                                step="1"
+                                                                className="w-20 h-8 px-1 py-0 text-sm"
+                                                                value={data.product_prices[productId]?.toFixed(0) ?? ''}
+                                                                onChange={e => {
+                                                                    const price = parseFloat(e.target.value);
+                                                                    setData('product_prices', {
+                                                                        ...data.product_prices,
+                                                                        [productId]: isNaN(price) || price < 0 ? 0 : price
+                                                                    });
+                                                                }}
+                                                            />
                                                         </div>
                                                     ) : null;
                                                 })}
@@ -343,11 +396,17 @@ export default function Index({ products, orders, customers }: PageProps) {
                     globalFilter={globalFilter}
                     setGlobalFilter={setGlobalFilter}
                     onEdit={(order) => {
+                        console.log(order.products);
                         setData({
+                            status: order.status ?? 'paid',
                             customer_id: order.customer ? String(order.customer.id) : '',
                             product_ids: order.products?.map(p => p.id) ?? [],
-                            product_quantities: order.products?.reduce((acc, product) => {
-                                acc[product.id] = product.pivot?.quantity ?? 1;
+                            product_quantities: order.products?.reduce((acc, p) => {
+                                acc[p.id] = p.pivot?.quantity ?? 1;
+                                return acc;
+                            }, {} as Record<number, number>) ?? {},
+                            product_prices: order.products?.reduce((acc, p) => {
+                                acc[p.id] = p.pivot?.price ?? 1;
                                 return acc;
                             }, {} as Record<number, number>) ?? {}
                         });

@@ -28,7 +28,7 @@ class ProductController extends Controller
             $query->whereAny(['name', 'description'], 'like', '%' . $request->search . '%');
         }
 
-        $products = $query->paginate(3)->withQueryString();
+        $products = $query->paginate(10)->withQueryString();
 
         return Inertia::render('product/index', [
             'unities' => Unity::latest()->get(),

@@ -47,6 +47,21 @@ export default function OrdersTable({ orders, globalFilter, setGlobalFilter, onE
         columnHelper.accessor('amount', { header: 'Montant', cell: info => currencyFormatter(info.getValue()) }),
         columnHelper.accessor('products_count', { header: 'Produits', cell: info => info.getValue() }),
         columnHelper.accessor('date', { header: 'Commandé le', cell: info => new Date(info.getValue()).toLocaleDateString('fr-FR') }),
+        columnHelper.accessor('status', { header: 'Statut', cell: info => {
+                if (info.getValue() === 'paid')
+                    return (
+                        <span className={'text-green-600 font-semibold'}>
+                            Payé
+                        </span>
+                    ) 
+                else 
+                    return (
+                        <span className={'text-orange-600 font-semibold'}>
+                            En attente
+                        </span>
+                    )
+            }
+        }),
         columnHelper.accessor('created_at', { header: 'Créé le', cell: info => new Date(info.getValue()).toLocaleDateString('fr-FR') }),
         columnHelper.accessor('updated_at', { header: 'Modifié le', cell: info => new Date(info.getValue()).toLocaleDateString('fr-FR') }),
         {

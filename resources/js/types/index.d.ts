@@ -114,6 +114,7 @@ export interface Order {
     updated_at: string;
     products?: Product[];
     products_count: number;
+    status: 'pending' | 'paid';
     customer?: User;
 };
 

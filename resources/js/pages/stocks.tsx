@@ -68,7 +68,10 @@ const columnHelper = createColumnHelper<Stock>()
 export default function Index({ products, suppliers, stocks }: PageProps) {
     const [globalFilter, setGlobalFilter] = React.useState('')
     const [dialogOpen, setDialogOpen] = React.useState(false);
-    const [sorting, setSorting] = React.useState<SortingState>([])
+    const [sorting, setSorting] = React.useState<SortingState>([]);
+
+    const [value, setValue] = React.useState<string>('');
+    const [query, setQuery] = React.useState<string>('');
 
     const [isEditMode, setIsEditMode] = React.useState(false)
     const [currentStockId, setCurrentStockId] = React.useState<number | null>(null)
@@ -81,6 +84,10 @@ export default function Index({ products, suppliers, stocks }: PageProps) {
         product_id: '',
         supplier_id: ''
     });
+
+    const filtered: Product[] = products.filter(p => p.name.toLowerCase().includes(query.toLowerCase()));
+
+    const visible: Product[] = filtered.slice(0, 8);
 
     const handleAddOrEditStock = () => {
         if (isEditMode && currentStockId) {
@@ -294,9 +301,11 @@ export default function Index({ products, suppliers, stocks }: PageProps) {
                                             </PopoverTrigger>
                                             <PopoverContent className="w-full p-0">
                                                 <Command>
-                                                    <CommandInput placeholder="Rechercher un produit..." />
+                                                    <CommandInput 
+                                                        placeholder="Rechercher un produit..." 
+                                                    />
                                                     <CommandEmpty>Aucun produit trouvé.</CommandEmpty>
-                                                    <CommandGroup>
+                                                    <CommandGroup className='max-h-60 overflow-y-auto'>
                                                         {products.map(product => (
                                                             <CommandItem
                                                                 key={product.id}
@@ -308,7 +317,7 @@ export default function Index({ products, suppliers, stocks }: PageProps) {
                                                                         data.product_id === String(product.id) ? "opacity-100" : "opacity-0"
                                                                     )}
                                                                 />
-                                                                {product.name}
+                                                                {product.name} - <span className='italic text-gray'>{plural(product.quantity_in_stock, product.unity.name)}</span>
                                                             </CommandItem>
                                                         ))}
                                                     </CommandGroup>

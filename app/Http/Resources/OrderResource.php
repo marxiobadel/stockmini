@@ -28,13 +28,14 @@ class OrderResource extends JsonResource
                         'name' => $product->unity->name,
                     ],
                     'pivot' => [
-                        'quantity' => $product->pivot->quantity,
-                        'price' => $product->pivot->price,
+                        'quantity' => $product->pivot?->quantity ?? 1,
+                        'price' => $product->pivot?->price,
                     ],
                 ];
             }),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'status' => $this->status,
             'customer' => new CustomerResource($this->customer),
         ];
     }

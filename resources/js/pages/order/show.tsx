@@ -4,6 +4,7 @@ import { BreadcrumbItem, Order } from "@/types";
 import { Head } from "@inertiajs/react";
 import { Button } from "@/components/ui/button";
 import { File, Printer } from "lucide-react";
+import React from 'react';
 
 interface PageProps {
     order: Order;
@@ -14,7 +15,19 @@ export default function Show({ order }: PageProps) {
         { title: 'Tableau de bord', href: route('dashboard') },
         { title: 'Ventes', href: route('orders.index') },
         { title: `Vente #${order.id}`, href: route('orders.show', order.id) },
-    ]
+    ];
+
+    const iframeRef = React.useRef<HTMLIFrameElement>(null);
+
+    const handlePrint = () => {
+        const iframe = iframeRef.current;
+        if (iframe?.contentWindow) {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+        } else {
+            alert('PDF not loaded yet. Please try again.')
+        }
+    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -43,14 +56,22 @@ export default function Show({ order }: PageProps) {
                         <File className="w-4 h-4 mr-2" />
                         Afficher la facture
                     </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.print()}
-                    >
+                    <div>
+                        <iframe
+                            ref={iframeRef}
+                            src={route('orders.print', order.id)}
+                            style={{ display: 'none' }}
+                            title="invoice-pdf"
+                        />
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handlePrint}
+                        >
                         <Printer className="w-4 h-4 mr-2" />
                         Imprimer la facture
                     </Button>
+                    </div>
                 </div>
 
                 <div>

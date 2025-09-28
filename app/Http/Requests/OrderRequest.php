@@ -24,10 +24,13 @@ class OrderRequest extends FormRequest
     {
         return [
             'customer_id' => 'nullable|exists:users,id',
-            'product_ids' => ['required', 'array'],
-            'product_ids.*' => ['integer', 'exists:products,id'],
-            'product_quantities' => ['required', 'array'],
-            'product_quantities.*' => ['integer', 'min:1'],
+            'status' => 'required|in:paid,pending',
+            'product_ids' => 'required|array',
+            'product_ids.*' => 'integer|exists:products,id',
+            'product_quantities' => 'required|array',
+            'product_quantities.*' => 'integer|min:1',
+            'product_prices' => 'required|array',
+            'product_prices.*' => 'numeric|min:1',
         ];
     }
 }
