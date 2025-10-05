@@ -27,10 +27,11 @@ interface OrdersTableProps {
     orders: Order[];
     globalFilter: string;
     setGlobalFilter: (value: string) => void;
-    onEdit: (order: Order) => void;
+    onEdit?: (order: Order) => void;
+    displayEdit?: boolean;
 }
 
-export default function OrdersTable({ orders, globalFilter, setGlobalFilter, onEdit }: OrdersTableProps) {
+export default function OrdersTable({ orders, globalFilter, setGlobalFilter, onEdit, displayEdit = true }: OrdersTableProps) {
     const columnHelper = createColumnHelper<Order>()
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [alertDialogOpen, setAlertDialogOpen] = React.useState(false)
@@ -54,6 +55,12 @@ export default function OrdersTable({ orders, globalFilter, setGlobalFilter, onE
                             Payé
                         </span>
                     ) 
+                else if (info.getValue() === 'partial')
+                    return (
+                        <span className={'text-blue-600 font-semibold'}>
+                            Payé en partie
+                        </span>
+                    )
                 else 
                     return (
                         <span className={'text-orange-600 font-semibold'}>
@@ -81,16 +88,19 @@ export default function OrdersTable({ orders, globalFilter, setGlobalFilter, onE
                             <TooltipContent>Voir la vente</TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
-                    <TooltipProvider>
+                    {displayEdit === true && <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button size="sm" variant="outline" onClick={() => onEdit(row.original)}>
+                                <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    onClick={() => router.get(route('orders.edit', row.original.id))}>
                                     <Pencil className="w-4 h-4" />
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>Modifier la vente</TooltipContent>
                         </Tooltip>
-                    </TooltipProvider>
+                    </TooltipProvider>}
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>

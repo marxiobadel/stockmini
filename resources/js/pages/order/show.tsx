@@ -47,6 +47,12 @@ export default function Show({ order }: PageProps) {
                         <p className="text-black text-md">
                             Total : <span className="font-extrabold">{currencyFormatter(order.amount)}</span>
                         </p>
+                        <p className="text-black text-md">
+                            Total Payé: <span className="font-extrabold">{currencyFormatter(order.total_paid)}</span>
+                        </p>
+                        <p className="text-black text-md">
+                            Total Restant : <span className="font-extrabold">{currencyFormatter(order.remaining)}</span>
+                        </p>
                     </div>
                     <Button
                         variant="outline"

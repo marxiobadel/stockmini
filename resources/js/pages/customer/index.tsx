@@ -2,7 +2,7 @@
 
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type User } from '@/types';
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     useReactTable,
     getCoreRowModel,
@@ -24,7 +24,7 @@ import {
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Pencil, Trash2, Plus, Loader2Icon, FileWarning } from 'lucide-react'
+import { Pencil, Trash2, Plus, Loader2Icon, FileWarning, Eye } from 'lucide-react'
 import React from 'react'
 import {
     Dialog,
@@ -45,6 +45,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Tableau de bord', href: route('dashboard') },
@@ -192,6 +193,18 @@ export default function Index({ customers }: PageProps) {
             cell: ({ row }) => (
                 <>
                     <div className="flex gap-2">
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Link href={route('customers.show', { customer: row.original.id })}>
+                                        <Button size="sm" variant="outline">
+                                            <Eye className="w-4 h-4" />
+                                        </Button>
+                                    </Link>
+                                </TooltipTrigger>
+                                <TooltipContent>Voir détails client</TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                         <Button
                             size="sm"
                             variant="outline"

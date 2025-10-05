@@ -13,6 +13,21 @@ class Order extends Model
         'date',
     ];
 
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function getTotalPaidAttribute()
+    {
+        return $this->payments()->where('status', 'paid')->sum('amount');
+    }
+
+    public function getRemainingAttribute()
+    {
+        return $this->amount - $this->total_paid;
+    }
+
     public function products()
     {
         return $this->belongsToMany(Product::class)->withPivot(['quantity', 'price']);

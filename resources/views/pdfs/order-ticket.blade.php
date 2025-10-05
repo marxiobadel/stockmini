@@ -42,7 +42,7 @@
         }
         .total {
             font-weight: bold;
-            font-size: 22px;
+            font-size: 21px;
         }
         .footer {
             margin-top: 10px;
@@ -85,6 +85,18 @@
             <td class="total">TOTAL</td>
             <td class="right total">
                 {{ number_format($order->amount, 0, ',', ' ') }} FCFA
+            </td>
+        </tr>
+        <tr>
+            <td class="total">TOTAL PAYE</td>
+            <td class="right total">
+                {{ number_format($order->total_paid, 0, ',', ' ') }} FCFA
+            </td>
+        </tr>
+        <tr>
+            <td class="total">RESTE</td>
+            <td class="right total">
+                {{ number_format($order->remaining, 0, ',', ' ') }} FCFA
             </td>
         </tr>
     </table>

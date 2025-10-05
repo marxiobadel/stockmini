@@ -19,6 +19,8 @@ class OrderResource extends JsonResource
             'reference' => $this->reference,
             'date' => $this->date,
             'amount' => $this->amount,
+            'total_paid' => $this->total_paid,
+            'remaining' => $this->remaining,
             'products_count' => $this->products->count(),
             'products' => $this->products->map(function ($product) {
                 return [
@@ -31,6 +33,16 @@ class OrderResource extends JsonResource
                         'quantity' => $product->pivot?->quantity ?? 1,
                         'price' => $product->pivot?->price,
                     ],
+                ];
+            }),
+            'payments' => $this->payments->map(function ($payment) {
+                return [
+                    'id' => $payment->id,
+                    'order_id' => $payment->order_id,
+                    'amount' => $payment->amount,
+                    'status' => $payment->status,
+                    'payment_date' => $payment->payment_date,
+                    'method' => $payment->method,
                 ];
             }),
             'created_at' => $this->created_at,

@@ -19,11 +19,28 @@ class OrderController extends Controller
     public function index()
     {
         return Inertia::render('order/index', [
-            'customers' => CustomerResource::collection(User::latest()->get()),
-            'products' => ProductResource::collection(Product::latest()->get()),
             'orders' => OrderResource::collection(
                 Order::withCount('products')->with('products')->latest()->get()
             )
+        ]);
+    }
+
+    public function create()
+    {
+        return Inertia::render('order/create', [
+            'customers' => CustomerResource::collection(User::latest()->get()),
+            'products' => ProductResource::collection(Product::latest()->get()),
+        ]);
+    }
+
+    public function edit(Order $order)
+    {
+        $order->load('payments');
+
+        return Inertia::render('order/edit', [
+            'order' => new OrderResource($order),
+            'customers' => CustomerResource::collection(User::latest()->get()),
+            'products' => ProductResource::collection(Product::latest()->get()),
         ]);
     }
 
@@ -50,23 +67,24 @@ class OrderController extends Controller
     public function store(OrderRequest $request)
     {
         $validated = $request->validated();
-
         $customerId = $validated['customer_id'] ?? null;
-        
+   
         try {
             DB::beginTransaction();
 
-            // Vérifier les stocks
+            // --- Vérifier les stocks ---
             foreach ($validated['product_ids'] as $productId) {
                 $product = Product::findOrFail($productId);
                 $requestedQty = $validated['product_quantities'][$productId] ?? 1;
 
                 if ($product->quantity_in_stock < $requestedQty) {
-                    throw new \Exception("Stock insuffisant pour le produit : {$product->name}. Stock restant : {$product->quantity_in_stock}, demandé : {$requestedQty}");
+                    throw new \Exception(
+                        "Stock insuffisant pour le produit : {$product->name}. Stock restant : {$product->quantity_in_stock}, demandé : {$requestedQty}"
+                    );
                 }
             }
 
-            // Créer la commande
+            // --- Créer la commande ---
             $order = Order::create([
                 'reference' => 'ORD-' . strtoupper(uniqid()),
                 'date' => now(),
@@ -74,38 +92,10 @@ class OrderController extends Controller
                 'status' => $validated['status'],
             ]);
 
-            // Attacher les produits avec quantités et prix spécifiques
+            // --- Attacher les produits ---
             foreach ($validated['product_ids'] as $productId) {
                 $quantity = $validated['product_quantities'][$productId] ?? 1;
                 $price = $validated['product_prices'][$productId] ?? 1;
-
-                /*$product = Product::findOrFail($productId);
-
-                $specificPriceQuery = $product->specificPrices()
-                    ->whereDate('start_date', '<=', now())
-                    ->where(function ($q) {
-                        $q->whereNull('end_date')->orWhere('end_date', '>=', now());
-                    });
-
-                if ($customerId) {
-                    $specificPriceQuery->where(function ($q) use ($customerId) {
-                        $q->whereHas('customers', function ($q2) use ($customerId) {
-                            $q2->where('users.id', $customerId);
-                        })->orWhereDoesntHave('customers');
-                    });
-                } else {
-                    $specificPriceQuery->whereDoesntHave('customers');
-                }
-
-                $specificPrice = $specificPriceQuery->first();
-
-                if ($specificPrice) {
-                    if ($specificPrice->reduction_type === 'percent') {
-                        $price = $product->selling_price * (1 - $specificPrice->reduction_value / 100);
-                    } elseif ($specificPrice->reduction_type === 'amount') {
-                        $price = max(0, $product->selling_price - $specificPrice->reduction_value);
-                    }
-                }*/
 
                 $order->products()->attach($productId, [
                     'quantity' => $quantity,
@@ -113,19 +103,32 @@ class OrderController extends Controller
                 ]);
             }
 
+            // --- Ajouter les paiements ---
+            if (!empty($validated['payments'])) {
+                foreach ($validated['payments'] as $payment) {
+                    $order->payments()->create([
+                        'amount' => $payment['amount'],
+                        'payment_date' => $payment['payment_date'] ?? now(),
+                        'status' => $payment['status'],
+                    ]);
+                }
+            }
+
             DB::commit();
 
-            return redirect()->route('orders.index')->with('success', 'La commande a bien été enregistrée.');
+            return redirect()->route('orders.index')
+                ->with('success', 'La commande a bien été enregistrée.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => 'Erreur lors de la création de la commande: ' . $e->getMessage()]);
+            return back()->withErrors([
+                'error' => 'Erreur lors de la création de la commande: ' . $e->getMessage()
+            ]);
         }
     }
 
     public function update(OrderRequest $request, Order $order)
     {
         $validated = $request->validated();
-
         $customerId = $validated['customer_id'] ?? null;
 
         try {
@@ -135,7 +138,6 @@ class OrderController extends Controller
 
             foreach ($validated['product_ids'] as $productId) {
                 $newQuantity = $validated['product_quantities'][$productId] ?? 1;
-
                 $product = Product::with('orders')->findOrFail($productId);
 
                 // Somme des quantités commandées dans d'autres commandes (hors celle-ci)
@@ -143,41 +145,13 @@ class OrderController extends Controller
                     ->where('orders.id', '!=', $order->id)
                     ->sum('order_product.quantity');
 
-                // Calcul du stock disponible
-                $remainingStock = $product->quantity - $orderedInOtherOrders;
+                $remainingStock = $product->quantity_in_stock - $orderedInOtherOrders;
 
                 if ($remainingStock < $newQuantity) {
                     throw new \Exception("Stock insuffisant pour le produit '{$product->name}'. Stock disponible : {$remainingStock}, demandé : {$newQuantity}");
                 }
 
-                // Prix spécifique selon client ou global
                 $price = $validated['product_prices'][$productId] ?? 1;
-
-                /*$specificPriceQuery = $product->specificPrices()
-                    ->whereDate('start_date', '<=', now())
-                    ->where(function ($q) {
-                        $q->whereNull('end_date')->orWhere('end_date', '>=', now());
-                    });
-
-                if ($customerId) {
-                    $specificPriceQuery->where(function ($q) use ($customerId) {
-                        $q->whereHas('customers', function ($q2) use ($customerId) {
-                            $q2->where('users.id', $customerId);
-                        })->orWhereDoesntHave('customers');
-                    });
-                } else {
-                    $specificPriceQuery->whereDoesntHave('customers');
-                }
-
-                $specificPrice = $specificPriceQuery->first();
-
-                if ($specificPrice) {
-                    if ($specificPrice->reduction_type === 'percent') {
-                        $price = $product->selling_price * (1 - $specificPrice->reduction_value / 100);
-                    } elseif ($specificPrice->reduction_type === 'amount') {
-                        $price = max(0, $product->selling_price - $specificPrice->reduction_value);
-                    }
-                }*/
 
                 $syncData[$productId] = [
                     'quantity' => $newQuantity,
@@ -185,23 +159,53 @@ class OrderController extends Controller
                 ];
             }
 
+            // Mise à jour de la commande et des produits
             $order->update(['customer_id' => $customerId, 'status' => $validated['status']]);
             $order->products()->sync($syncData);
 
+            // --- Mettre à jour les paiements ---
+            if (isset($validated['payments'])) {
+                $order->payments()->delete(); // supprimer les anciens paiements
+                foreach ($validated['payments'] as $payment) {
+                    $order->payments()->create([
+                        'amount' => $payment['amount'],
+                        'payment_date' => $payment['payment_date'] ?? now(),
+                        'status' => $payment['status'],
+                    ]);
+                }
+            }
+
             DB::commit();
 
-            return back()->with('success', 'Vente mise à jour avec succès.');
+            return redirect()->route('orders.index')
+                ->with('success', 'Vente mise à jour avec succès.');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['error' => 'Erreur lors de la mise à jour : ' . $e->getMessage()]);
         }
     }
 
-
     public function destroy(Order $order)
     {
-        $order->delete();
+        try {
+            DB::beginTransaction();
 
-        return back()->with('success', 'Vente supprimée avec succès.');
+            // --- Supprimer les paiements liés ---
+            $order->payments()->delete();
+
+            // --- Supprimer la relation produits + la commande ---
+            $order->products()->detach();
+            $order->delete();
+
+            DB::commit();
+
+            return back()->with('success', 'Vente supprimée avec succès.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors([
+                'error' => 'Erreur lors de la suppression de la vente : ' . $e->getMessage()
+            ]);
+        }
     }
+
 }

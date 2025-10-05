@@ -114,9 +114,21 @@ export interface Order {
     updated_at: string;
     products?: Product[];
     products_count: number;
-    status: 'pending' | 'paid';
+    status: 'pending' | 'paid' | 'partial';
+    total_paid: number;
+    remaining: number;
     customer?: User;
+    payments?: Payment[];
 };
+
+export interface Payment {
+    id: number;
+    order_id: number;
+    amount: number;
+    payment_date: 'pending' | 'paid' | string;
+    status: string;
+    method: string;
+}
 
 export interface SpecificPrice {
     id?: number;
