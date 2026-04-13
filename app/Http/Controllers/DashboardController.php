@@ -14,17 +14,18 @@ class DashboardController extends Controller
     {
         $query = Order::query()->withCount('products')->with(['customer', 'products']);
 
-        if ($request->filled('from') && $request->filled('to')) {
-            $query->whereBetween('date', [
-                $request->from,
-                $request->to
-            ]);
+        if ($request->filled('from')) {
+            $query->whereDate('date', '>=', $request->from);
+        }
+
+        if ($request->filled('to')) {
+            $query->whereDate('date', '<=', $request->to);
         }
 
         $orders = $query->latest()->get();
 
         return Inertia::render('dashboard', [
-            'filters' => $request->only('from', 'to'),
+            'filters' => $request->only(['from', 'to']),
             'orders' => OrderResource::collection($orders)
         ]);
     }
