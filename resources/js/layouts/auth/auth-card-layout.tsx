@@ -1,6 +1,4 @@
-import AppLogoIcon from '@/components/app-logo-icon';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Link } from '@inertiajs/react';
+import { Package, ShieldCheck, Store } from 'lucide-react';
 import { type PropsWithChildren } from 'react';
 
 export default function AuthCardLayout({
@@ -13,22 +11,62 @@ export default function AuthCardLayout({
     description?: string;
 }>) {
     return (
-        <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
-            <div className="flex w-full max-w-md flex-col gap-6">
-                <Link href={route('dashboard')} className="flex items-center gap-2 self-center font-medium">
-                    <div className="flex h-9 w-9 items-center justify-center">
-                        <AppLogoIcon className="size-9 fill-current text-black dark:text-white" />
-                    </div>
-                </Link>
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans">
+            {/* Main Container */}
+            <div className="max-w-6xl w-full bg-white rounded-3xl sm:shadow-sm overflow-hidden flex flex-col lg:flex-row min-h-[600px] lg:min-h-[700px]">
 
-                <div className="flex flex-col gap-6">
-                    <Card className="rounded-xl">
-                        <CardHeader className="px-10 pt-8 pb-0 text-center">
-                            <CardTitle className="text-xl">{title}</CardTitle>
-                            <CardDescription>{description}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="px-10 py-8">{children}</CardContent>
-                    </Card>
+                {/* Left Side - Branding & Image (Hidden on smaller screens) */}
+                <div className="hidden lg:flex lg:w-5/12 relative bg-blue-900 flex-col justify-between overflow-hidden">
+                    {/* Background Image with Overlay */}
+                    <div className="absolute inset-0">
+                        <img
+                            src="https://images.unsplash.com/photo-1553413077-190dd305871c?q=80&w=2000&auto=format&fit=crop"
+                            alt="Entrepôt moderne"
+                            className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-blue-950/75 mix-blend-multiply"></div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-blue-950 via-blue-900/40 to-transparent"></div>
+                    </div>
+
+                    {/* Content Over Image */}
+                    <div className="relative z-10 p-12 flex flex-col h-full text-white">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-white/10 p-3 rounded-xl backdrop-blur-sm border border-white/20">
+                                <Store className="w-8 h-8 text-blue-100" />
+                            </div>
+                            <div>
+                                <h2 className="text-2xl font-bold tracking-tight">{import.meta.env.VITE_APP_NAME}</h2>
+                                <p className="text-blue-200 text-sm font-medium">Gros & Détail</p>
+                            </div>
+                        </div>
+
+                        <div className="mt-auto pb-8">
+                            <h1 className="text-4xl font-bold leading-tight mb-6">
+                                Votre partenaire de <span className="text-blue-300">confiance</span> pour vos ventes.
+                            </h1>
+                            <ul className="space-y-4">
+                                <li className="flex items-center gap-3 text-blue-100">
+                                    <Package className="w-5 h-5 text-blue-300" />
+                                    <span>Tarifs préférentiels pour les grossistes</span>
+                                </li>
+                                <li className="flex items-center gap-3 text-blue-100">
+                                    <Store className="w-5 h-5 text-blue-300" />
+                                    <span>Catalogue complet pour les détaillants</span>
+                                </li>
+                                <li className="flex items-center gap-3 text-blue-100">
+                                    <ShieldCheck className="w-5 h-5 text-blue-300" />
+                                    <span>Paiements sécurisés et livraison rapide</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right Side - Login Form */}
+                <div className="w-full lg:w-7/12 flex flex-col justify-center p-4 sm:p-8 md:p-12 lg:p-20 bg-white">
+                    <div className="max-w-md w-full mx-auto">
+                        {children}
+                    </div>
                 </div>
             </div>
         </div>
