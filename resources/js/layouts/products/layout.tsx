@@ -5,13 +5,18 @@ import { type PropsWithChildren } from 'react';
 
 const productNavItems: NavItem[] = [
     {
+        title: 'Catégories',
+        href: route('categories.index'),
+        icon: null,
+    },
+    {
         title: 'Produits',
         href: route('products.index'),
         icon: null,
     },
     {
-        title: 'Catégories',
-        href: route('categories.index'),
+        title: 'Stocks',
+        href: route('stocks.index'),
         icon: null,
     },
 ];

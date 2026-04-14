@@ -25,7 +25,7 @@ class DashboardController extends Controller
         $orders = $query->latest()->get();
 
         return Inertia::render('dashboard', [
-            'filters' => $request->only(['from', 'to']),
+            'filters' => $request->only(['from', 'to', 'preset']),
             'orders' => OrderResource::collection($orders)
         ]);
     }

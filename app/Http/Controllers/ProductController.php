@@ -47,7 +47,7 @@ class ProductController extends Controller
         $perPage = $request->integer('per_page', 10);
         $products = $query->paginate($perPage)->withQueryString();
 
-        return Inertia::render('product/index', [
+        return Inertia::render('products/index', [
             'unities' => fn () => Unity::latest()->get(),
             'categories' => fn () => Category::latest()->get(),
             'products' => ProductResource::collection($products)->response()->getData(true),
@@ -59,7 +59,7 @@ class ProductController extends Controller
     {
         $product->load(['category', 'specificPrices.customers']);
 
-        return Inertia::render('product/show', [
+        return Inertia::render('products/show', [
             'customers' => CustomerResource::collection(User::customer()->latest()->get()),
             'product' => $product->toResource(ProductResource::class)
         ]);

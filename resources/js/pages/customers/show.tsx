@@ -1,142 +1,187 @@
-"use client"
+"use client";
 
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type Order, type User } from '@/types';
-import { Head, router } from '@inertiajs/react';
-import { Input } from '@/components/ui/input'
-import React from 'react'
+import { useState, useMemo } from 'react';
+import { Head } from '@inertiajs/react';
+import { format } from 'date-fns';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import OrdersTable from '../order/table';
-import { DateRangePicker } from "@/components/daterange-picker";
-import { format } from "date-fns";
-import { DollarSign, ShoppingCart } from 'lucide-react';
-import { currencyFormatter } from '@/lib/utils';
+    DollarSign,
+    ShoppingCart,
+    Search,
+    User as UserIcon,
+    CalendarX
+} from 'lucide-react';
 
-interface PageProps {
-    orders: Order[];
+// Layout & Global Components
+import AppLayout from '@/layouts/app-layout';
+import { BreadcrumbItem, Order, User } from '@/types';
+import { currencyFormatter, handlePresetChange } from '@/lib/utils';
+
+// UI Components
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from '@/components/ui/select';
+import OrdersTable from '../order/table';
+import { useIsMobile } from '@/hooks/use-mobile';
+
+/**
+ * Props definition for the Customer Show page.
+ */
+interface CustomerShowProps {
     customer: User;
+    orders: Order[];
     filters?: {
-        from?: string
-        to?: string
+        from?: string;
+        to?: string;
+        preset?: string; // Permet de retenir le choix dans le menu déroulant
     }
 }
 
-export default function Show({ orders, customer, filters }: PageProps) {
-    const breadcrumbs: BreadcrumbItem[] = [
+export default function CustomerShow({ customer, orders, filters }: CustomerShowProps) {
+    const isMobile = useIsMobile();
+    // Local State
+    const [globalFilter, setGlobalFilter] = useState<string>('');
+
+    // Derived State: Memoized to prevent recalculation on search filter changes
+    const totalAmount = useMemo(() => {
+        return orders.reduce((sum, order) => sum + (Number(order.amount) || 0), 0);
+    }, [orders]);
+
+    const breadcrumbs = useMemo<BreadcrumbItem[]>(() => [
         { title: 'Tableau de bord', href: route('dashboard') },
         { title: 'Clients', href: route('customers.index') },
-        { title: 'Détails Client', href: '#' },
-    ];
-
-    const [globalFilter, setGlobalFilter] = React.useState('');
-    const [alertDialogOpen, setAlertDialogOpen] = React.useState(false);
-    const [orderToDelete, setOrderToDelete] = React.useState<Order | null>(null);
-
-    const handleDateChange = (range: { from?: Date; to?: Date } | undefined) => {
-        if (range?.from && range?.to) {
-            router.get(
-                route('customers.show', customer.id),
-                {
-                    from: format(range.from, "yyyy-MM-dd"),
-                    to: format(range.to, "yyyy-MM-dd"),
-                },
-                { preserveState: true }
-            )
-        }
-    }
-
-    const total_amount = React.useMemo(() => orders.reduce((carry, order) => carry + order.amount, 0), [orders]);
+        { title: customer.name || 'Détails Client', href: '#' },
+    ], [customer.name]);
 
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Détails Client" />
+        <AppLayout breadcrumbs={isMobile ? [] : breadcrumbs}>
+            <Head title={`Client - ${customer.name || 'Détails'}`} />
 
-            <div className="p-4 sm:p-6 lg:p-8">
-                <div className="flex justify-end my-4">
-                    <DateRangePicker
-                        initialFrom={filters?.from}
-                        initialTo={filters?.to}
-                        onChange={handleDateChange}
-                    />
-                </div>
-                <div className="flex gap-6 my-8 mb-8">
-                    {/* Montant total */}
-                    <div className="flex flex-1 items-center gap-4 rounded-lg bg-white dark:bg-gray-900 border p-6">
-                        <div className="rounded-full bg-green-100 dark:bg-green-800 p-3">
-                            <DollarSign className="h-8 w-8 text-green-600 dark:text-green-400" />
+            <div className="mx-auto w-full space-y-8 p-4 sm:p-6 lg:p-8">
+
+                {/* --- Page Header --- */}
+                <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <UserIcon className="h-6 w-6" />
                         </div>
                         <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Montant total</p>
-                            <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">
-                                {currencyFormatter(total_amount)}
+                            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                                {customer.name}
+                            </h1>
+                            <p className="text-sm text-muted-foreground">
+                                Inscrit le {customer.created_at ? format(new Date(customer.created_at), 'dd/MM/yyyy') : 'N/A'}
                             </p>
                         </div>
                     </div>
 
-                    {/* Exemple autre carte: nombre de commandes */}
-                    <div className="flex flex-1 items-center gap-4 rounded-lg bg-white dark:bg-gray-900 border p-6">
-                        <div className="rounded-full bg-blue-100 dark:bg-blue-800 p-3">
-                            <ShoppingCart className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-                        </div>
+                    {/* Updated Preset Date Selector */}
+                    <div className="w-full sm:w-[240px]">
+                        <Select
+                            value={filters?.preset || 'all'}
+                            onValueChange={(value) => handlePresetChange(value, route('customers.show', customer.id))}
+                        >
+                            <SelectTrigger aria-label="Sélectionner la période">
+                                <SelectValue placeholder="Filtrer par date" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Toutes les dates</SelectItem>
+                                <SelectItem value="today">Aujourd'hui</SelectItem>
+                                <SelectItem value="yesterday">Hier</SelectItem>
+                                <SelectItem value="this_week">Cette semaine</SelectItem>
+                                <SelectItem value="last_week">La semaine dernière</SelectItem>
+                                <SelectItem value="this_month">Ce mois</SelectItem>
+                                <SelectItem value="last_month">Le mois dernier</SelectItem>
+                                <SelectItem value="this_year">Cette année</SelectItem>
+                                <SelectItem value="last_year">L'année dernière</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </header>
+
+                {/* --- Key Performance Indicators (KPIs) --- */}
+                <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-6">
+                    <Card className="shadow-none">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                                Chiffre d'Affaires
+                            </CardTitle>
+                            <DollarSign className="h-4 w-4 text-emerald-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-3xl font-bold text-foreground">
+                                {currencyFormatter(totalAmount)}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                Généré sur la période sélectionnée
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="shadow-none">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                                Total des Commandes
+                            </CardTitle>
+                            <ShoppingCart className="h-4 w-4 text-blue-500" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-3xl font-bold text-foreground">
+                                {orders.length}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                                Achats validés sur la période
+                            </p>
+                        </CardContent>
+                    </Card>
+                </section>
+
+                {/* --- Orders Data Table --- */}
+                <Card className="shadow-none py-0">
+                    <CardHeader className="p-4 sm:p-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b pb-4">
                         <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Commandes</p>
-                            <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{orders.length}</p>
+                            <CardTitle className="text-lg">Historique des achats</CardTitle>
+                            <p className="text-sm text-muted-foreground">
+                                Liste détaillée de toutes les transactions du client.
+                            </p>
                         </div>
-                    </div>
-                </div>
-                <div className="flex justify-between items-center mb-4">
-                    <h1 className="text-2xl font-bold">Liste des ventes</h1>
-
-                    <div className="flex gap-2 items-center">
-                        <Input
-                            placeholder="Rechercher"
-                            value={globalFilter}
-                            onChange={e => setGlobalFilter(e.target.value)}
-                            className="w-64"
-                        />
-                    </div>
-                </div>
-
-                <OrdersTable
-                    orders={orders}
-                    globalFilter={globalFilter}
-                    setGlobalFilter={setGlobalFilter}
-                    displayEdit={false}
-                />
-
-                <AlertDialog open={alertDialogOpen} onOpenChange={setAlertDialogOpen}>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Voulez-vous vraiment supprimer cette vente ? Action irréversible.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>Annuler</AlertDialogCancel>
-                            <AlertDialogAction
-                                onClick={() => {
-                                    if (orderToDelete) {
-                                        router.delete(route('orders.destroy', orderToDelete.id));
-                                        setAlertDialogOpen(false);
-                                        setOrderToDelete(null);
-                                    }
-                                }}
-                            >
-                                Supprimer
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+                        <div className="relative w-full sm:w-72">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                placeholder="Rechercher une transaction..."
+                                value={globalFilter}
+                                onChange={(e) => setGlobalFilter(e.target.value)}
+                                className="w-full pl-9"
+                                aria-label="Rechercher une transaction"
+                            />
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-4 sm:p-6">
+                        {orders.length > 0 ? (
+                            <OrdersTable
+                                orders={orders as Order[]}
+                                globalFilter={globalFilter}
+                                setGlobalFilter={setGlobalFilter}
+                                displayEdit={false}
+                            />
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-12 text-center">
+                                <div className="rounded-full bg-secondary p-3 mb-4">
+                                    <CalendarX className="h-6 w-6 text-muted-foreground" />
+                                </div>
+                                <h3 className="text-lg font-medium text-foreground">Aucune commande trouvée</h3>
+                                <p className="text-sm text-muted-foreground max-w-sm mt-1">
+                                    Ce client n'a passé aucune commande dans la période sélectionnée ou correspondante à votre recherche.
+                                </p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
         </AppLayout>
     );

@@ -23,6 +23,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('products/{product}/specific-prices', [ProductController::class, 'storeSpecificPrices'])->name('products.specific-prices.store');
 
     Route::resource('stocks', StockController::class)->except(['edit', 'create', 'show']);
+    Route::post('stocks/destroy', [StockController::class, 'destroy'])->name('stocks.destroy');
 
     Route::resource('orders', OrderController::class);
 

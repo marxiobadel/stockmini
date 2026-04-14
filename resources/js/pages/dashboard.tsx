@@ -1,12 +1,6 @@
 import * as React from "react"
-import { router, Head, Link } from "@inertiajs/react"
-import {
-    format,
-    startOfDay, endOfDay, subDays,
-    startOfWeek, endOfWeek, subWeeks,
-    startOfMonth, endOfMonth, subMonths,
-    startOfYear, endOfYear, subYears
-} from "date-fns"
+import { Head, Link } from "@inertiajs/react"
+import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 
 import AppLayout from '@/layouts/app-layout'
@@ -33,7 +27,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { currencyFormatter } from '@/lib/utils'
+import { currencyFormatter, handlePresetChange } from '@/lib/utils'
 import { DollarSign, Users, CreditCard, Activity, TrendingUp, FileText, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -52,72 +46,6 @@ interface PageProps {
 }
 
 export default function Dashboard({ orders, filters }: PageProps) {
-    const handlePresetChange = (value: string) => {
-        const now = new Date();
-        let from: Date | undefined;
-        let to: Date | undefined;
-
-        // Calcul des dates en fonction du choix
-        switch (value) {
-            case 'today':
-                from = startOfDay(now);
-                to = endOfDay(now);
-                break;
-            case 'yesterday':
-                from = startOfDay(subDays(now, 1));
-                to = endOfDay(subDays(now, 1));
-                break;
-            case 'this_week':
-                // weekStartsOn: 1 signifie que la semaine commence le Lundi
-                from = startOfWeek(now, { weekStartsOn: 1 });
-                to = endOfWeek(now, { weekStartsOn: 1 });
-                break;
-            case 'last_week':
-                from = startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
-                to = endOfWeek(subWeeks(now, 1), { weekStartsOn: 1 });
-                break;
-            case 'this_month':
-                from = startOfMonth(now);
-                to = endOfMonth(now);
-                break;
-            case 'last_month':
-                from = startOfMonth(subMonths(now, 1));
-                to = endOfMonth(subMonths(now, 1));
-                break;
-            case 'this_year':
-                from = startOfYear(now);
-                to = endOfYear(now);
-                break;
-            case 'last_year':
-                from = startOfYear(subYears(now, 1));
-                to = endOfYear(subYears(now, 1));
-                break;
-            case 'all':
-            default:
-                from = undefined;
-                to = undefined;
-                break;
-        }
-
-        // Préparation des paramètres d'URL
-        const queryParams: Record<string, string | undefined> = {};
-
-        if (from) queryParams.from = format(from, "yyyy-MM-dd");
-        if (to) queryParams.to = format(to, "yyyy-MM-dd");
-        if (value !== 'all') queryParams.preset = value; // On garde le preset en mémoire
-
-        // Envoi de la requête au backend
-        router.get(
-            route("dashboard"),
-            queryParams,
-            {
-                preserveState: true,
-                preserveScroll: true,
-                replace: true
-            }
-        )
-    }
-
     const total_amount = React.useMemo(() => orders.reduce((carry, order) => carry + order.amount, 0), [orders]);
     const uniqueClientsCount = React.useMemo(() => new Set(orders.map(o => o.customer?.id).filter(Boolean)).size, [orders]);
 
@@ -142,7 +70,7 @@ export default function Dashboard({ orders, filters }: PageProps) {
                     <div className="flex items-center space-x-2">
                         <Select
                             defaultValue={filters?.preset || "all"}
-                            onValueChange={handlePresetChange}
+                            onValueChange={(value) => handlePresetChange(value, route("dashboard"))}
                         >
                             <SelectTrigger className="w-[220px]">
                                 <SelectValue placeholder="Sélectionnez une période" />

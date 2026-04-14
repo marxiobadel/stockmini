@@ -53,14 +53,15 @@ class CustomerController extends Controller
     public function show(Request $request, User $customer)
     {
         $query = Order::withCount('products')
-            ->with('products')
-            ->whereCustomerId($customer->id);
+            ->with(['customer', 'products'])
+            ->where('customer_id', '=', $customer->id);
 
-        if ($request->filled('from') && $request->filled('to')) {
-            $query->whereBetween('created_at', [
-                $request->from,
-                $request->to
-            ]);
+        if ($request->filled('from')) {
+            $query->whereDate('date', '>=', $request->from);
+        }
+
+        if ($request->filled('to')) {
+            $query->whereDate('date', '<=', $request->to);
         }
 
         $orders = $query->latest()->get();
@@ -70,7 +71,7 @@ class CustomerController extends Controller
             'products' => ProductResource::collection(Product::latest()->get()),
             'orders' => OrderResource::collection($orders),
             'customer' => new CustomerResource($customer),
-            'filters' => $request->only('from', 'to'),
+            'filters' => $request->only(['from', 'to', 'preset']),
         ]);
     }
 
