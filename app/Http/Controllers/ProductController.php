@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ProductRequest;
+use App\Http\Requests\SpecificPriceRequest;
 use App\Http\Resources\CustomerResource;
 use App\Http\Resources\ProductResource;
 use App\Models\Category;
@@ -56,6 +57,8 @@ class ProductController extends Controller
 
     public function show(Product $product)
     {
+        $product->load(['category', 'specificPrices.customers']);
+
         return Inertia::render('product/show', [
             'customers' => CustomerResource::collection(User::customer()->latest()->get()),
             'product' => $product->toResource(ProductResource::class)
@@ -95,19 +98,9 @@ class ProductController extends Controller
         }
     }
 
-    public function storeSpecificPrices(Request $request, Product $product)
+    public function storeSpecificPrices(SpecificPriceRequest $request, Product $product)
     {
-        $data = $request->validate([
-            'specific_prices' => 'required|array',
-            'specific_prices.*.id' => 'nullable|integer|exists:specific_prices,id',
-            'specific_prices.*.start_date' => 'nullable|date',
-            'specific_prices.*.end_date' => 'nullable|date|after_or_equal:specific_prices.*.start_date',
-            'specific_prices.*.reduction_type' => 'required|in:percent,amount',
-            'specific_prices.*.reduction_value' => 'required|numeric|min:0',
-            'specific_prices.*.from_quantity' => 'required|integer|min:1',
-            'specific_prices.*.customer_ids' => 'nullable|array',
-            'specific_prices.*.customer_ids.*' => 'integer|exists:users,id',
-        ]);
+        $data = $request->validated();
 
         $inputPrices = $data['specific_prices'];
 

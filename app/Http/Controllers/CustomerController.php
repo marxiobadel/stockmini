@@ -14,18 +14,47 @@ use Inertia\Inertia;
 
 class CustomerController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return Inertia::render('customer/index', [
-            'customers' => CustomerResource::collection(User::customer()->latest()->get()),
+        $request->validate([
+            'page' => ['integer', 'min:1'],
+            'per_page' => ['integer', 'min:1', 'max:100'],
+            'search' => ['nullable', 'string'],
+            'sort' => ['nullable', 'string'],
+        ]);
+
+        $query = User::query();
+
+        if ($request->filled('search')) {
+            $query->whereAny(['name', 'email', 'phone', 'address'], 'like', '%' . $request->string('search') . '%');
+        }
+
+        $allowed = ['name', 'email', 'created_at', 'updated_at'];
+        if ($request->filled('sort')) {
+            $sort = $request->string('sort');
+            $direction = str_starts_with($sort, '-') ? 'desc' : 'asc';
+            $column = ltrim($sort, '-');
+            if (in_array($column, $allowed)) {
+                $query->orderBy($column, $direction);
+            }
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
+
+        $perPage = $request->integer('per_page', 10);
+        $categories = $query->paginate($perPage)->withQueryString();
+
+        return Inertia::render("customers/index", [
+            'customers' => CustomerResource::collection($categories)->response()->getData(true),
+            'filters' => $request->only(['search', 'page', 'sort', 'per_page']),
         ]);
     }
 
-    public function show(Request $request, User $customer) 
+    public function show(Request $request, User $customer)
     {
         $query = Order::withCount('products')
-                ->with('products')
-                ->whereCustomerId($customer->id);
+            ->with('products')
+            ->whereCustomerId($customer->id);
 
         if ($request->filled('from') && $request->filled('to')) {
             $query->whereBetween('created_at', [
@@ -36,7 +65,7 @@ class CustomerController extends Controller
 
         $orders = $query->latest()->get();
 
-        return Inertia::render('customer/show', [
+        return Inertia::render('customers/show', [
             'customers' => CustomerResource::collection(User::latest()->get()),
             'products' => ProductResource::collection(Product::latest()->get()),
             'orders' => OrderResource::collection($orders),
@@ -51,7 +80,7 @@ class CustomerController extends Controller
 
         User::create([...$validated, 'password' => bcrypt('123456')]);
 
-        return redirect()->back()->with('success', 'Client ajouté avec succès.');
+        return back()->with('success', 'Client ajouté avec succès.');
     }
 
     public function update(CustomerRequest $request, User $customer)
@@ -61,14 +90,18 @@ class CustomerController extends Controller
         return redirect()->back()->with('success', 'Client modifié avec succès.');
     }
 
-    public function destroy(User $customer)
+    public function destroy(Request $request)
     {
-        if ($customer->orders->isNotEmpty()) {
-            return redirect()->back()->with('warning', 'Merci de supprimer avant tous les commandes de ce client.');
+        try {
+            if ($request->has('ids')) {
+                $ids = $request->input('ids', []);
+
+                User::destroy($ids);
+            }
+
+            return redirect()->back()->with('success', 'Client(s) supprimé(s) avec succès.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Erreur : ' . $e->getMessage());
         }
-
-        $customer->delete();
-
-        return redirect()->back()->with('success', 'Client supprimé avec succès.');
     }
 }

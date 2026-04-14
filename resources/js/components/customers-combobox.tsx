@@ -58,7 +58,7 @@ export function CustomersComboBox({
                     variant="outline"
                     role="combobox"
                     aria-expanded={open}
-                    className="w-full justify-between"
+                    className="mt-1 w-full justify-between"
                 >
                     {selectedLabels || placeholder}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

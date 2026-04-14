@@ -15,7 +15,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('categories', CategoryController::class)->only(['index', 'store', 'update']);
     Route::post('categories/destroy', [CategoryController::class, 'destroy'])->name('categories.destroy');
 
-    Route::resource('suppliers', SupplierController::class)->except(['edit', 'create', 'show']);
+    Route::resource('suppliers', SupplierController::class)->only(['index', 'store', 'update']);
+    Route::post('suppliers/destroy', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
 
     Route::resource('products', ProductController::class)->only(['index', 'show', 'store', 'update']);
     Route::post('products/destroy', [ProductController::class, 'destroy'])->name('products.destroy');
@@ -25,7 +26,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('orders', OrderController::class);
 
-    Route::resource('customers', CustomerController::class)->except(['edit', 'create']);
+    Route::resource('customers', CustomerController::class)->except(['edit', 'create', 'destroy']);
+    Route::post('customers/destroy', [CustomerController::class, 'destroy'])->name('customers.destroy');
 
     Route::get('/orders/{order}/print', [OrderController::class, 'print'])->name('orders.print');
 });

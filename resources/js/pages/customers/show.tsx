@@ -18,7 +18,6 @@ import {
 import OrdersTable from '../order/table';
 import { DateRangePicker } from "@/components/daterange-picker";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 import { DollarSign, ShoppingCart } from 'lucide-react';
 import { currencyFormatter } from '@/lib/utils';
 
@@ -35,7 +34,7 @@ export default function Show({ orders, customer, filters }: PageProps) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Tableau de bord', href: route('dashboard') },
         { title: 'Clients', href: route('customers.index') },
-        { title: 'Détails Client', href: route('customers.show', customer.id) },
+        { title: 'Détails Client', href: '#' },
     ];
 
     const [globalFilter, setGlobalFilter] = React.useState('');
@@ -71,7 +70,7 @@ export default function Show({ orders, customer, filters }: PageProps) {
                 </div>
                 <div className="flex gap-6 my-8 mb-8">
                     {/* Montant total */}
-                    <div className="flex flex-1 items-center gap-4 rounded-lg bg-white dark:bg-gray-900 border border-1 p-6">
+                    <div className="flex flex-1 items-center gap-4 rounded-lg bg-white dark:bg-gray-900 border p-6">
                         <div className="rounded-full bg-green-100 dark:bg-green-800 p-3">
                             <DollarSign className="h-8 w-8 text-green-600 dark:text-green-400" />
                         </div>
@@ -84,7 +83,7 @@ export default function Show({ orders, customer, filters }: PageProps) {
                     </div>
 
                     {/* Exemple autre carte: nombre de commandes */}
-                    <div className="flex flex-1 items-center gap-4 rounded-lg bg-white dark:bg-gray-900 border border-1 p-6">
+                    <div className="flex flex-1 items-center gap-4 rounded-lg bg-white dark:bg-gray-900 border p-6">
                         <div className="rounded-full bg-blue-100 dark:bg-blue-800 p-3">
                             <ShoppingCart className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                         </div>
