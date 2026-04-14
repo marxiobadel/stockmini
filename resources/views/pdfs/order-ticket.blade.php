@@ -54,7 +54,7 @@
 
 <body>
     <div class="title">
-        ETS Hadjorê (691299331 / 670316489)
+        SODAM SA (NIU : M042416719601D)
     </div>
     <div style="font-weight: bold;" class="subtitle">
         Ticket N° #{{ $order->reference }}

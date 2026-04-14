@@ -19,7 +19,7 @@ export default function Edit({ order, products, customers }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Modifier la vente #${order.id}`} />
-            <div className="p-6 max-w-4xl mx-auto">
+            <div className="p-4 sm:p-6 w-full mx-auto">
                 <h1 className="text-2xl font-bold mb-6">Modifier la vente</h1>
                 <OrderForm order={order} products={products} customers={customers} />
             </div>

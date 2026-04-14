@@ -97,9 +97,12 @@ export default function OrderForm({
 
     /** Ajouter un paiement manuel **/
     const handleAddPayment = () => {
+        // Obtenir la date du jour au format YYYY-MM-DD
+        const today = new Date().toISOString().split("T")[0];
+
         setData("payments", [
             ...data.payments,
-            { amount: 0, payment_date: "", status: "pending" },
+            { amount: 0, payment_date: today, status: "paid" },
         ]);
     };
 
@@ -123,36 +126,37 @@ export default function OrderForm({
 
         isEditMode
             ? put(route("orders.update", order!.id), {
-                onSuccess: () => {
-                    toast("Vente modifiée avec succès");
-                    onSuccess?.();
-                },
-                onError: (errors) => {
-                    toast.error('Erreur lors de la modification', {
-                        description: Object.values(errors).join(', '),
-                    });
-                }
-            })
+                  onSuccess: () => {
+                      toast("Vente modifiée avec succès");
+                      onSuccess?.();
+                  },
+                  onError: (errors) => {
+                      toast.error("Erreur lors de la modification", {
+                          description: Object.values(errors).join(", "),
+                      });
+                  },
+              })
             : post(route("orders.store"), {
-                onSuccess: () => {
-                    toast("Vente enregistrée avec succès");
-                    onSuccess?.();
-                },
-                onError: (errors) => {
-                    toast.error('Erreur lors de l\'ajout', {
-                        description: Object.values(errors).join(', '),
-                        duration: 10000
-                    });
-                }
-            });
+                  onSuccess: () => {
+                      toast("Vente enregistrée avec succès");
+                      onSuccess?.();
+                  },
+                  onError: (errors) => {
+                      toast.error("Erreur lors de l'ajout", {
+                          description: Object.values(errors).join(", "),
+                          duration: 10000,
+                      });
+                  },
+              });
     };
 
     return (
         <>
             <div className="space-y-6">
                 {/* --- CLIENT + STATUT --- */}
-                <div className="flex space-x-4">
-                    <div className="w-1/2 space-y-1">
+                {/* Made flex-col on mobile, flex-row on md+ screens */}
+                <div className="flex flex-col md:flex-row gap-4">
+                    <div className="w-full md:w-1/2 space-y-1">
                         <Label htmlFor="customer_id">Client</Label>
                         <div className="flex items-center gap-2">
                             <Select
@@ -182,7 +186,7 @@ export default function OrderForm({
                         </div>
                     </div>
 
-                    <div className="w-1/2 space-y-1">
+                    <div className="w-full md:w-1/2 space-y-1">
                         <Label htmlFor="status">Statut</Label>
                         <Select
                             value={data.status}
@@ -211,8 +215,9 @@ export default function OrderForm({
                     />
                 </div>
 
-                <div className="flex gap-4">
-                    <ScrollArea className="flex-1 max-h-64 border rounded-md p-2">
+                {/* Made flex-col on mobile, flex-row on md+ screens */}
+                <div className="flex flex-col md:flex-row gap-4">
+                    <ScrollArea className="w-full md:flex-1 max-h-64 border rounded-md p-2">
                         {products
                             .filter((p) =>
                                 p.name.toLowerCase().includes(productSearch.toLowerCase())
@@ -222,7 +227,7 @@ export default function OrderForm({
                                 return (
                                     <label
                                         key={product.id}
-                                        className="flex items-center gap-2 cursor-pointer"
+                                        className="flex items-center gap-2 cursor-pointer mb-2 last:mb-0"
                                     >
                                         <input
                                             type="checkbox"
@@ -265,19 +270,19 @@ export default function OrderForm({
                             })}
                     </ScrollArea>
 
-                    <ScrollArea className="w-96 border max-h-64 rounded-md p-2">
+                    <ScrollArea className="w-full md:w-96 border max-h-64 rounded-md p-2">
                         <p className="font-medium mb-2">Quantités / Prix</p>
                         {data.product_ids.map((id) => {
                             const product = products.find((p) => p.id === id);
                             return (
-                                <div key={id} className="flex items-center space-y-2 space-x-2">
+                                <div key={id} className="flex items-center gap-2 mb-2 last:mb-0">
                                     <span className="flex-1 truncate text-sm">
                                         {product?.name}
                                     </span>
                                     <Input
                                         type="number"
                                         min="1"
-                                        className="mr-0.5 mb-1 w-16 h-8 px-1 py-0 text-sm"
+                                        className="w-16 h-8 px-1 py-0 text-sm"
                                         value={data.product_quantities[id] ?? 1}
                                         onChange={(e) =>
                                             setData("product_quantities", {
@@ -289,7 +294,7 @@ export default function OrderForm({
                                     <Input
                                         type="number"
                                         step="0.01"
-                                        className="ml-0.5 mb-1 w-20 h-8 px-1 py-0 text-sm"
+                                        className="w-20 h-8 px-1 py-0 text-sm"
                                         value={data.product_prices[id]?.toFixed(0) ?? ""}
                                         onChange={(e) =>
                                             setData("product_prices", {
@@ -306,20 +311,20 @@ export default function OrderForm({
 
                 {/* --- SECTION PAIEMENTS MULTIPLES --- */}
                 <div className="border rounded-md p-4 mt-6 space-y-4">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                         <h3 className="font-semibold text-md">Paiements</h3>
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                             <Input
                                 type="number"
                                 placeholder="Nb de paiements"
-                                className="w-32"
+                                className="w-full sm:w-32"
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter") {
                                         handleSplitPayments(Number((e.target as HTMLInputElement).value));
                                     }
                                 }}
                             />
-                            <Button variant="outline" onClick={handleAddPayment}>
+                            <Button variant="outline" className="w-full sm:w-auto" onClick={handleAddPayment}>
                                 + Ajouter un paiement
                             </Button>
                         </div>
@@ -332,12 +337,12 @@ export default function OrderForm({
                     )}
 
                     {data.payments.map((p, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
+                        <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-2 border sm:border-0 p-3 sm:p-0 rounded-md">
                             <Input
                                 type="number"
                                 step="0.01"
                                 min="0"
-                                className="w-32"
+                                className="w-full sm:w-32"
                                 value={p.amount}
                                 onChange={(e) => {
                                     const updated = [...data.payments];
@@ -347,7 +352,7 @@ export default function OrderForm({
                             />
                             <Input
                                 type="date"
-                                className="w-40"
+                                className="w-full sm:w-40"
                                 value={p.payment_date || ""}
                                 onChange={(e) => {
                                     const updated = [...data.payments];
@@ -363,7 +368,7 @@ export default function OrderForm({
                                     setData("payments", updated);
                                 }}
                             >
-                                <SelectTrigger className="w-32">
+                                <SelectTrigger className="w-full sm:w-32">
                                     <SelectValue placeholder="Statut" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -372,11 +377,12 @@ export default function OrderForm({
                                 </SelectContent>
                             </Select>
                             <Button
-                                variant="ghost"
+                                variant="destructive"
                                 size="icon"
+                                className="w-full sm:w-10 sm:flex-none"
                                 onClick={() => handleRemovePayment(idx)}
                             >
-                                ✕
+                                <span className="sm:hidden mr-2">Supprimer</span> ✕
                             </Button>
                         </div>
                     ))}
@@ -393,11 +399,11 @@ export default function OrderForm({
             </div>
 
             {/* --- FOOTER --- */}
-            <div className="flex justify-between items-end mt-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-6 gap-4">
                 <p className="text-md font-semibold">
                     Total : {currencyFormatter(total)} — Payé : {currencyFormatter(totalPaid)}
                 </p>
-                <Button onClick={handleSubmit} disabled={processing}>
+                <Button className="w-full sm:w-auto" onClick={handleSubmit} disabled={processing}>
                     {processing && <Loader2Icon className="animate-spin mr-2" />}
                     {processing ? "En cours de vente..." : "Lancer la vente"}
                 </Button>
