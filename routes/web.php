@@ -11,14 +11,22 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
     Route::resource('categories', CategoryController::class)->only(['index', 'store', 'update']);
     Route::post('categories/destroy', [CategoryController::class, 'destroy'])->name('categories.destroy');
+
     Route::resource('suppliers', SupplierController::class)->except(['edit', 'create', 'show']);
-    Route::resource('products', ProductController::class)->except(['edit', 'create']);
-    Route::post('/products/{product}/specific-prices', [ProductController::class, 'storeSpecificPrices'])->name('products.specific-prices.store');
+
+    Route::resource('products', ProductController::class)->only(['index', 'show', 'store', 'update']);
+    Route::post('products/destroy', [ProductController::class, 'destroy'])->name('products.destroy');
+    Route::post('products/{product}/specific-prices', [ProductController::class, 'storeSpecificPrices'])->name('products.specific-prices.store');
+
     Route::resource('stocks', StockController::class)->except(['edit', 'create', 'show']);
+
     Route::resource('orders', OrderController::class);
+
     Route::resource('customers', CustomerController::class)->except(['edit', 'create']);
+
     Route::get('/orders/{order}/print', [OrderController::class, 'print'])->name('orders.print');
 });
 

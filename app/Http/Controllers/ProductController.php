@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ProductRequest;
 use App\Http\Resources\CustomerResource;
 use App\Http\Resources\ProductResource;
 use App\Models\Category;
@@ -17,23 +18,39 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
+        $request->validate([
+            'page' => ['integer', 'min:1'],
+            'per_page' => ['integer', 'min:1', 'max:100'],
+            'search' => ['nullable', 'string'],
+            'sort' => ['nullable', 'string'],
+        ]);
+
         $query = Product::with('category');
-        if ($request->filled('sort') && $request->filled('direction')) {
-            $query->orderBy($request->sort, $request->direction);
-        } else {
-            $query->latest();
-        }
 
         if ($request->filled('search')) {
-            $query->whereAny(['name', 'description'], 'like', '%' . $request->search . '%');
+            $query->whereAny(['name', 'description'], 'like', '%' . $request->string('search') . '%');
         }
 
-        $products = $query->paginate(10)->withQueryString();
+        $allowed = ['name', 'description', 'created_at', 'updated_at'];
+        if ($request->filled('sort')) {
+            $sort = $request->string('sort');
+            $direction = str_starts_with($sort, '-') ? 'desc' : 'asc';
+            $column = ltrim($sort, '-');
+            if (in_array($column, $allowed)) {
+                $query->orderBy($column, $direction);
+            }
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
+
+        $perPage = $request->integer('per_page', 10);
+        $products = $query->paginate($perPage)->withQueryString();
 
         return Inertia::render('product/index', [
-            'unities' => Unity::latest()->get(),
-            'categories' => Category::latest()->get(),
+            'unities' => fn () => Unity::latest()->get(),
+            'categories' => fn () => Category::latest()->get(),
             'products' => ProductResource::collection($products)->response()->getData(true),
+            'filters' => $request->only(['search', 'page', 'sort', 'per_page']),
         ]);
     }
 
@@ -45,46 +62,37 @@ class ProductController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(ProductRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|unique:products,name',
-            'description' => 'nullable|string|max:1000',
-            'selling_price' => 'required|numeric',
-            'purchasing_price' => 'nullable|numeric',
-            'threshold_alert' => 'required|integer',
-            'category_id' => 'required|exists:categories,id',
-            'unity_id' => 'required|exists:unities,id',
-        ]);
+        $validated = $request->validated();
 
         Product::create($validated);
 
-        return redirect()->route('products.index', ['page' => 1])
-                        ->with('success', 'Produit ajouté avec succès.');
+        return back()->with('success', 'Produit ajouté avec succès.');
     }
 
-    public function update(Request $request, Product $product)
+    public function update(ProductRequest $request, Product $product)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|unique:products,name,' . $product->id,
-            'description' => 'nullable|string|max:1000',
-            'selling_price' => 'required|numeric',
-            'purchasing_price' => 'nullable|numeric',
-            'threshold_alert' => 'required|integer',
-            'category_id' => 'required|exists:categories,id',
-            'unity_id' => 'required|exists:unities,id',
-        ]);
+        $validated = $request->validated();
 
         $product->update($validated);
 
-        return redirect()->back()->with('success', 'Produit modifié avec succès.');
+        return back()->with('success', 'Produit modifié avec succès.');
     }
 
-    public function destroy(Product $product)
+    public function destroy(Request $request)
     {
-        $product->delete();
+        try {
+            if ($request->has('ids')) {
+                $ids = $request->input('ids', []);
 
-        return redirect()->back()->with('success', 'Produit supprimé avec succès.');
+                Product::destroy($ids);
+            }
+
+            return back()->with('success', 'Produit(s) supprimé(s) avec succès.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Erreur : '.$e->getMessage());
+        }
     }
 
     public function storeSpecificPrices(Request $request, Product $product)

@@ -30,7 +30,7 @@ export default function Show({ product, customers, errors }: PageProps) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: "Tableau de bord", href: route("dashboard") },
         { title: "Produits", href: route("products.index") },
-        { title: `Produit #${product.id}`, href: route("products.show", product.id) },
+        { title: `Produit #${product.id}`, href: '#' },
     ];
 
     const isLowStock = product.quantity_in_stock <= product.threshold_alert;
