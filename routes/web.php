@@ -25,12 +25,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('stocks', StockController::class)->except(['edit', 'create', 'show']);
     Route::post('stocks/destroy', [StockController::class, 'destroy'])->name('stocks.destroy');
 
-    Route::resource('orders', OrderController::class);
+    Route::resource('orders', OrderController::class)->except(['destroy']);
+    Route::post('orders/destroy', [OrderController::class, 'destroy'])->name('orders.destroy');
+    Route::get('orders/{order}/print', [OrderController::class, 'print'])->name('orders.print');
 
     Route::resource('customers', CustomerController::class)->except(['edit', 'create', 'destroy']);
     Route::post('customers/destroy', [CustomerController::class, 'destroy'])->name('customers.destroy');
-
-    Route::get('/orders/{order}/print', [OrderController::class, 'print'])->name('orders.print');
 });
 
 require __DIR__.'/settings.php';

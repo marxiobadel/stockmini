@@ -16,18 +16,36 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class OrderController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return Inertia::render('order/index', [
-            'orders' => OrderResource::collection(
-                Order::withCount('products')->with('products')->latest()->get()
-            )
+        $request->validate([
+            'page' => ['integer', 'min:1'],
+            'per_page' => ['integer', 'min:1', 'max:100'],
+            'search' => ['nullable', 'string'],
+            'sort' => ['nullable', 'string'],
+        ]);
+
+        $query = Order::withCount('products')->with(['products', 'customer']);
+
+        if ($request->filled('search')) {
+            $query->whereAny(['reference'], 'like', '%' . $request->string('search') . '%')
+                ->orWhereHas('products', fn ($q) => $q->where('name', 'like', '%' . $request->string('search') . '%'));
+        }
+
+        $query->orderBy('created_at', 'desc');
+
+        $perPage = $request->integer('per_page', 10);
+        $orders = $query->paginate($perPage)->withQueryString();
+
+        return Inertia::render('orders/index', [
+            'orders' => OrderResource::collection($orders),
+            'filters' => $request->only(['search', 'page', 'sort', 'per_page']),
         ]);
     }
 
     public function create()
     {
-        return Inertia::render('order/create', [
+        return Inertia::render('orders/create', [
             'customers' => CustomerResource::collection(User::latest()->get()),
             'products' => ProductResource::collection(Product::latest()->get()),
         ]);
@@ -37,7 +55,7 @@ class OrderController extends Controller
     {
         $order->load('payments');
 
-        return Inertia::render('order/edit', [
+        return Inertia::render('orders/edit', [
             'order' => new OrderResource($order),
             'customers' => CustomerResource::collection(User::latest()->get()),
             'products' => ProductResource::collection(Product::latest()->get()),
@@ -68,7 +86,7 @@ class OrderController extends Controller
     {
         $validated = $request->validated();
         $customerId = $validated['customer_id'] ?? null;
-   
+
         try {
             DB::beginTransaction();
 
