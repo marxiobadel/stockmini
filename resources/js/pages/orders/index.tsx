@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { ArrowUpDown, Edit, MoreHorizontal, Trash2, Plus, Download, Search, Eye } from 'lucide-react';
+import { ArrowUpDown, Edit, MoreHorizontal, Trash2, Plus, Download, Search, Eye, File, FileText } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { currencyFormatter, dateTimeFormatOptions } from '@/lib/utils';
@@ -142,6 +142,19 @@ export default function Index({ orders, filters }: PageProps) {
             cell: ({ row }) => row.original.products_count,
         },
         {
+            id: "facture",
+            header: 'Facture',
+            cell: ({ row }) => {
+                return <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(route('orders.print', row.original.id), '_blank')}
+                >
+                    <FileText className="w-4 h-4"/>
+                </Button>
+            },
+        },
+        {
             accessorKey: "date",
             header: 'Commandé le',
             cell: ({ row }) => {
@@ -207,7 +220,7 @@ export default function Index({ orders, filters }: PageProps) {
             <div className="p-4 sm:p-6 lg:p-8">
                 <div className="space-y-6">
                     {/* Header */}
-                    <div className="flex justify-end flex-wrap">
+                    <div className="flex justify-end flex-wrap gap-y-2">
                         <Button
                             variant="outline"
                             className="ml-2"
