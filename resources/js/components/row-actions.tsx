@@ -6,7 +6,8 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Edit, Trash2, Eye } from "lucide-react";
-import { router } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
+import type { SharedData, User } from "@/types";
 
 interface RowActionsProps<T> {
     row: T;
@@ -16,6 +17,7 @@ interface RowActionsProps<T> {
     /** Optional route name for Inertia navigation */
     editRoute?: string;
     showRoute?: string;
+    user?: User
 }
 
 export function RowActions<T extends Record<string, any>>({
@@ -24,7 +26,8 @@ export function RowActions<T extends Record<string, any>>({
     onEdit,
     onDelete,
     editRoute,
-    showRoute
+    showRoute,
+    user
 }: RowActionsProps<T>) {
     const handleShow = () => {
         if (showRoute) {
@@ -41,7 +44,7 @@ export function RowActions<T extends Record<string, any>>({
             router.visit(editRoute);
         }
     };
-
+  
     const handleDelete = () => {
         if (onDelete) setTimeout(() => onDelete(row), 100);
     };
@@ -67,7 +70,7 @@ export function RowActions<T extends Record<string, any>>({
                     </DropdownMenuItem>
                 )}
 
-                {onDelete && (
+                {onDelete && user?.id !== row.id && (
                     <DropdownMenuItem
                         onClick={handleDelete}
                         className="text-destructive cursor-pointer"

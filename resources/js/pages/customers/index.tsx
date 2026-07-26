@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
-import type { BreadcrumbItem, PaginationMeta, User } from '@/types';
-import { Head, router } from '@inertiajs/react';
+import type { BreadcrumbItem, PaginationMeta, SharedData, User } from '@/types';
+import { Head, router, usePage } from '@inertiajs/react';
 import { useMemo, useState } from 'react';
 import { ColumnDef, getCoreRowModel, getSortedRowModel, useReactTable } from "@tanstack/react-table";
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,8 @@ interface PageProps {
 
 export default function Index({ customers, filters }: PageProps) {
     const isMobile = useIsMobile();
+
+    const { auth } = usePage<SharedData>().props;
 
     const [search, setSearch] = useState(filters.search ?? "");
     const [sort, setSort] = useState("");
@@ -165,6 +167,7 @@ export default function Index({ customers, filters }: PageProps) {
                     onEdit={handleEdit}
                     showRoute={route('customers.show', row.original.id)}
                     onDelete={handleDelete}
+                    user={auth.user}
                 />
             ),
         }

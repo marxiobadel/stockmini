@@ -5,23 +5,23 @@
     <meta charset="UTF-8">
     <style>
         @page {
-            margin: 20px 0;
+            margin: 10px 0 20px;
         }
         body {
             font-family: monospace, sans-serif;
-            font-size: 15px;
-            width: 90mm;
+            font-size: 11px;
+            width: 54mm; /*90*/
             margin: 0 auto;
         }
         .title {
             text-align: center;
             font-weight: 900;
-            font-size: 20px;
+            font-size: 14px;
             margin-bottom: 5px;
         }
         .subtitle {
             text-align: center;
-            font-size: 16px;
+            font-size: 12px;
             margin-bottom: 20px;
         }
         .line {
@@ -42,12 +42,12 @@
         }
         .total {
             font-weight: bold;
-            font-size: 21px;
+            font-size: 14px;
         }
         .footer {
             margin-top: 10px;
             text-align: center;
-            font-size: 15px;
+            font-size: 11px;
         }
     </style>
 </head>

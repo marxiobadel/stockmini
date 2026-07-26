@@ -76,7 +76,8 @@ class OrderController extends Controller
 
         // Générer le PDF depuis une vue Blade
         $pdf = Pdf::loadView('pdfs.order-ticket', compact('order'))
-                    ->setPaper([0, 0, 300.77, 900]);
+                    //->setPaper([0, 0, 300.77, 900]);
+                    ->setPaper([0, 0, 200.77, 900]);
 
         // Retourner le PDF en téléchargement ou affichage
         return $pdf->stream('ticket_vente_' . (string) $order->id . '.pdf');
@@ -203,17 +204,22 @@ class OrderController extends Controller
         }
     }
 
-    public function destroy(Order $order)
+    public function destroy(Request $request)
     {
         try {
             DB::beginTransaction();
-
             // --- Supprimer les paiements liés ---
-            $order->payments()->delete();
+            // $order->payments()->delete();
 
             // --- Supprimer la relation produits + la commande ---
-            $order->products()->detach();
-            $order->delete();
+            // $order->products()->detach();
+            // $order->delete();
+
+            if ($request->has('ids')) {
+                $ids = $request->input('ids', []);
+
+                Order::destroy($ids);
+            }
 
             DB::commit();
 

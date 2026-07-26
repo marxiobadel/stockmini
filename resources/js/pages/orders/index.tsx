@@ -307,7 +307,7 @@ export default function Index({ orders, filters }: PageProps) {
                                     <div className="flex flex-col">
                                         <span className="font-semibold text-foreground">Succès</span>
                                         <span className="text-sm text-muted-foreground">
-                                            Les commandes sélectionnées ont été supprimées.
+                                            Les commandes sélectionnées ont été supprimées avec succès.
                                         </span>
                                     </div>
                                 );
