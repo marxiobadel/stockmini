@@ -9,7 +9,7 @@ import type { Product, Stock, Supplier } from "@/types";
 import { toast } from "sonner";
 import { cn, inputClassNames, plural } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Props = {
@@ -40,11 +40,12 @@ export default function StockForm({ open, onClose, stock, suppliers, products, s
         if (stock) {
             form.setData({
                 quantity_in_stock: String(stock.quantity_in_stock),
-                product_id: String(stock.product_id),
-                supplier_id: String(stock.supplier_id),
+                product_id: stock.product_id ? String(stock.product_id) : '',
+                supplier_id: stock.supplier_id ? String(stock.supplier_id) : '',
             });
+            console.log(stock.product_id)
         } else {
-            form.reset();
+            form.reset('quantity_in_stock', 'product_id', 'supplier_id');
         }
 
         form.clearErrors();
@@ -80,7 +81,9 @@ export default function StockForm({ open, onClose, stock, suppliers, products, s
                 toast.success(
                     <div className="flex flex-col">
                         <span className="font-semibold">Succès</span>
-                        <span className="text-sm">{method === "PUT" ? "Catégorie mise à jour !" : "Catégorie créée !"}</span>
+                        <span className="text-sm">
+                            {method === "PUT" ? "Stock mis à jour !" : "Stock ajouté !"}
+                        </span>
                     </div>
                 );
                 // reset/close
@@ -151,23 +154,25 @@ export default function StockForm({ open, onClose, stock, suppliers, products, s
                                     <CommandInput
                                         placeholder="Rechercher un produit..."
                                     />
-                                    <CommandEmpty>Aucun produit trouvé.</CommandEmpty>
-                                    <CommandGroup className='max-h-60 overflow-y-auto'>
-                                        {products.map(product => (
-                                            <CommandItem
-                                                key={product.id}
-                                                onSelect={() => form.setData("product_id", String(product.id))}
-                                            >
-                                                <Check
-                                                    className={cn(
-                                                        "mr-2 h-4 w-4",
-                                                        form.data.product_id === String(product.id) ? "opacity-100" : "opacity-0"
-                                                    )}
-                                                />
-                                                {product.name} - <span className='italic text-gray'>{plural(product.quantity_in_stock, product.unity.name)}</span>
-                                            </CommandItem>
-                                        ))}
-                                    </CommandGroup>
+                                    <CommandList>
+                                        <CommandEmpty>Aucun produit trouvé.</CommandEmpty>
+                                        <CommandGroup className='max-h-60 overflow-y-auto'>
+                                            {products.map(product => (
+                                                <CommandItem
+                                                    key={product.id}
+                                                    onSelect={() => form.setData("product_id", String(product.id))}
+                                                >
+                                                    <Check
+                                                        className={cn(
+                                                            "mr-2 h-4 w-4",
+                                                            form.data.product_id === String(product.id) ? "opacity-100" : "opacity-0"
+                                                        )}
+                                                    />
+                                                    {product.name} - <span className='italic text-gray'>{plural(product.quantity_in_stock, product.unity.name)}</span>
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
                                 </Command>
                             </PopoverContent>
                         </Popover>
@@ -180,12 +185,13 @@ export default function StockForm({ open, onClose, stock, suppliers, products, s
                         <Label htmlFor="supplier_id" className="font-medium text-sm">Fournisseur</Label>
                         <Select
                             value={form.data.supplier_id}
-                            onValueChange={(value) => form.setData('supplier_id', value)}
+                            onValueChange={(value) => form.setData('supplier_id', value === 'none' ? '' : value)}
                         >
                             <SelectTrigger className={cn("mt-1", inputClassNames())}>
                                 <SelectValue placeholder="Choisissez un fournisseur" />
                             </SelectTrigger>
                             <SelectContent>
+                                <SelectItem value="none">Aucun fournisseur</SelectItem>
                                 {suppliers.map(supplier => (
                                     <SelectItem key={supplier.id} value={String(supplier.id)}>
                                         {supplier.name}

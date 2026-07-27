@@ -6,7 +6,7 @@ import { ColumnDef, getCoreRowModel, getSortedRowModel, useReactTable } from "@t
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowUpDown, Trash2, Plus, Search } from 'lucide-react';
+import { ArrowUpDown, Trash2, Plus, Search, ArrowRightLeft } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import ConfirmDeleteDialog from '@/components/confirm-delete-dialog';
@@ -16,6 +16,7 @@ import ProductsLayout from '@/layouts/products/layout';
 import { dateTimeFormatOptions, plural } from '@/lib/utils';
 import { RowActions } from '@/components/row-actions';
 import StockForm from './form';
+import ConversionForm from './convert';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Tableau de bord', href: route('dashboard') },
@@ -48,6 +49,9 @@ export default function Index({ stocks, products, suppliers, filters }: PageProp
 
     const [creatingStock, setCreatingStock] = useState(false);
     const [editingStock, setEditingStock] = useState<Stock | null>(null);
+    const [convertStock, setConvertStock] = useState<Stock | null>(null);
+
+    const [isConversionOpen, setIsConversionOpen] = useState(false);
 
     const toggleSort = (column: keyof Stock) => {
         let dir: "asc" | "desc" | "" = "asc";
@@ -73,6 +77,11 @@ export default function Index({ stocks, products, suppliers, filters }: PageProp
     const handleDelete = (stock: Stock) => {
         setDeleteStock(stock);
         setIsDialogOpen(true);
+    };
+
+    const handleConvert = (stock: Stock) => {
+        setConvertStock(stock);
+        setIsConversionOpen(true);
     };
 
     const handleBulkDelete = () => {
@@ -168,7 +177,7 @@ export default function Index({ stocks, products, suppliers, filters }: PageProp
             id: "actions",
             header: "Actions",
             cell: ({ row }) => (
-                <RowActions row={row.original} onEdit={handleEdit} onDelete={handleDelete} />
+                <RowActions row={row.original} onEdit={handleEdit} onDelete={handleDelete} onConvert={handleConvert} />
             ),
         }
     ], [sort]);
@@ -260,6 +269,14 @@ export default function Index({ stocks, products, suppliers, filters }: PageProp
                     method={editingStock ? "PUT" : "POST"}
                     products={products}
                     suppliers={suppliers}
+                />
+
+                <ConversionForm
+                    open={isConversionOpen}
+                    onClose={() => setIsConversionOpen(false)}
+                    stock={convertStock}
+                    stocks={stocks.data} 
+                    products={products}
                 />
 
                 {/* AlertDialog */}

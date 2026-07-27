@@ -5,13 +5,14 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Edit, Trash2, Eye } from "lucide-react";
+import { MoreHorizontal, Edit, Trash2, Eye, ArrowRightLeft } from "lucide-react";
 import { router, usePage } from "@inertiajs/react";
 import type { SharedData, User } from "@/types";
 
 interface RowActionsProps<T> {
     row: T;
     onShow?: (item: T) => void;
+    onConvert?: (item: T) => void;
     onEdit?: (item: T) => void;
     onDelete?: (item: T) => void;
     /** Optional route name for Inertia navigation */
@@ -23,6 +24,7 @@ interface RowActionsProps<T> {
 export function RowActions<T extends Record<string, any>>({
     row,
     onShow,
+    onConvert,
     onEdit,
     onDelete,
     editRoute,
@@ -44,6 +46,10 @@ export function RowActions<T extends Record<string, any>>({
             router.visit(editRoute);
         }
     };
+
+    const handleConvert = () => {
+        if (onConvert) setTimeout(() => onConvert(row), 100);
+    };
   
     const handleDelete = () => {
         if (onDelete) setTimeout(() => onDelete(row), 100);
@@ -61,6 +67,12 @@ export function RowActions<T extends Record<string, any>>({
                 {(onShow && showRoute) && (
                     <DropdownMenuItem onClick={handleShow}>
                         <Eye className="mr-1 h-4 w-4" /> Voir
+                    </DropdownMenuItem>
+                )}
+
+                {onConvert && (
+                    <DropdownMenuItem onClick={handleConvert}>
+                        <ArrowRightLeft className="mr-1 h-4 w-4" /> Convertir
                     </DropdownMenuItem>
                 )}
 
