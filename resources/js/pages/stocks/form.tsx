@@ -121,20 +121,6 @@ export default function StockForm({ open, onClose, stock, suppliers, products, s
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <Label htmlFor="quantity_in_stock" className="font-medium text-sm">Quantité en stock <span className="text-red-500">*</span></Label>
-                        <Input
-                            id="quantity_in_stock"
-                            type="number"
-                            value={form.data.quantity_in_stock}
-                            onChange={(e) => form.setData("quantity_in_stock", e.target.value)}
-                            onFocus={() => form.clearErrors("quantity_in_stock")}
-                            className={cn("mt-1", inputClassNames())}
-                        />
-                        {form.errors.quantity_in_stock && (
-                            <p className="mt-1 text-xs text-destructive">{form.errors.quantity_in_stock}</p>
-                        )}
-                    </div>
-                    <div>
                         <Label htmlFor="product_id" className="font-medium text-sm">Produit <span className="text-red-500">*</span></Label>
                         <Popover>
                             <PopoverTrigger asChild>
@@ -178,6 +164,21 @@ export default function StockForm({ open, onClose, stock, suppliers, products, s
                         </Popover>
                         {form.errors.product_id && (
                             <p className="mt-1 text-xs text-destructive">{form.errors.product_id}</p>
+                        )}
+                    </div>
+
+                    <div>
+                        <Label htmlFor="quantity_in_stock" className="font-medium text-sm">Quantité en stock <span className="text-red-500">*</span></Label>
+                        <Input
+                            id="quantity_in_stock"
+                            type="number"
+                            value={form.data.quantity_in_stock}
+                            onChange={(e) => form.setData("quantity_in_stock", e.target.value)}
+                            onFocus={() => form.clearErrors("quantity_in_stock")}
+                            className={cn("mt-1", inputClassNames())}
+                        />
+                        {form.errors.quantity_in_stock && (
+                            <p className="mt-1 text-xs text-destructive">{form.errors.quantity_in_stock}</p>
                         )}
                     </div>
 
