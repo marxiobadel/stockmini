@@ -25,7 +25,7 @@ class ProductRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('products', 'name')->ignore($this->product?->id),
+                //Rule::unique('products', 'name')->ignore($this->product?->id),
             ],
             'description' => ['nullable', 'string', 'max:1000'],
             'category_id' => ['required', 'exists:categories,id'],
