@@ -22,7 +22,7 @@
         .subtitle {
             text-align: center;
             font-size: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         .line {
             border-top: 1px dashed #000;
@@ -59,7 +59,9 @@
     <div style="font-weight: bold;" class="subtitle">
         Ticket N° #{{ $order->reference }}
     </div>
-    <div style="font-weight: bold;">Date: {{ $order->created_at->format('d/m/Y H:i') }}</div>
+    <div style="font-weight: bold;">Lieu: Nkolmesseng (Carrefour safari)</div>
+    <div style="font-weight: bold;">Tel: 658287127</div>
+    <div style="font-weight: bold;">Date (vente): {{ $order->created_at->format('d/m/Y H:i') }}</div>
     @if ($order->customer)
         <div style="font-weight: bold;">Client: {{ $order->customer->name }}</div>
     @endif
