@@ -29,6 +29,7 @@ type FormData = {
     threshold_alert: string;
     category_id: string;
     unity_id: string;
+    qty_in_stock: string;
     _method?: string;
 };
 
@@ -40,7 +41,8 @@ export default function ProductForm({ open, onClose, product, categories, unitie
         purchasing_price: '',
         threshold_alert: '',
         category_id: '',
-        unity_id: ''
+        unity_id: '',
+        qty_in_stock: ''
     });
 
     useEffect(() => {
@@ -52,7 +54,8 @@ export default function ProductForm({ open, onClose, product, categories, unitie
                 purchasing_price: product.purchasing_price ? String(product.purchasing_price) : '',
                 threshold_alert: String(product.threshold_alert),
                 category_id: String(product.category_id),
-                unity_id: String(product.unity_id)
+                unity_id: String(product.unity_id),
+                qty_in_stock: ''
             });
         } else {
             form.reset();
@@ -244,6 +247,21 @@ export default function ProductForm({ open, onClose, product, categories, unitie
                             )}
                         </div>
                     </div>
+                    {!product &&
+                    <div>
+                        <Label htmlFor="qty_in_stock" className="font-medium text-sm">Qté initiale en stock</Label>
+                        <Input
+                            id="qty_in_stock"
+                            type="number"
+                            value={form.data.qty_in_stock}
+                            onChange={(e) => form.setData("qty_in_stock", e.target.value)}
+                            onFocus={() => form.clearErrors("qty_in_stock")}
+                            className={cn("mt-1", inputClassNames())}
+                        />
+                        {form.errors.qty_in_stock && (
+                            <p className="mt-1 text-xs text-destructive">{form.errors.qty_in_stock}</p>
+                        )}
+                    </div>}
 
                     {/* Dialog Footer - Updated for better mobile stacking */}
                     <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 mt-6">

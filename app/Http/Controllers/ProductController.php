@@ -69,7 +69,14 @@ class ProductController extends Controller
     {
         $validated = $request->validated();
 
-        Product::create($validated);
+        $product = Product::create($validated);
+
+        if ($request->filled('qty_in_stock')) {
+            Stock::create([
+                'quantity_in_stock' => $request->qty_in_stock,
+                'product_id' => $product->id,
+            ]);
+        }
 
         return back()->with('success', 'Produit ajouté avec succès.');
     }
