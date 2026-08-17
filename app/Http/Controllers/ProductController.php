@@ -9,6 +9,7 @@ use App\Http\Resources\CustomerResource;
 use App\Http\Resources\ProductResource;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Stock;
 use App\Models\Unity;
 use App\Models\User;
 use Carbon\Carbon;
@@ -48,8 +49,8 @@ class ProductController extends Controller
         $products = $query->paginate($perPage)->withQueryString();
 
         return Inertia::render('products/index', [
-            'unities' => fn () => Unity::latest()->get(),
-            'categories' => fn () => Category::latest()->get(),
+            'unities' => fn () => Unity::oldest('name')->get(),
+            'categories' => fn () => Category::oldest('name')->get(),
             'products' => ProductResource::collection($products)->response()->getData(true),
             'filters' => $request->only(['search', 'page', 'sort', 'per_page']),
         ]);

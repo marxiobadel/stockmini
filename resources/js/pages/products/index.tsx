@@ -121,17 +121,17 @@ export default function Index({ products, categories, unities, filters }: PagePr
             cell: ({ row }) => row.original.category?.name || "N/A",
         },
         {
-            accessorKey: "selling_price",
-            header: 'Prix de vente',
-            cell: ({ row }) => currencyFormatter(row.original.selling_price)
-        },
-        {
             accessorKey: "purchasing_price",
             header: 'Prix d\'achat',
             cell: ({ row }) => {
                 const value = row.original.purchasing_price;
                 return value ? currencyFormatter(value) : <span className="italic text-muted-foreground">Aucun prix d'achat défini</span>
             }
+        },
+        {
+            accessorKey: "selling_price",
+            header: 'Prix de vente',
+            cell: ({ row }) => currencyFormatter(row.original.selling_price)
         },
         {
             accessorKey: "quantity",
