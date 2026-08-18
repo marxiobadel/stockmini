@@ -54,7 +54,7 @@
 
 <body>
     <div class="title">
-        SODAM SA (NIU : M042416719601D)
+        {{ config('app.name') }} (NIU : M042416719601D)
     </div>
     <div style="font-weight: bold;" class="subtitle">
         Ticket N° #{{ $order->reference }}

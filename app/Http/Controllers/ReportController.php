@@ -51,6 +51,9 @@ class ReportController extends Controller
 
         // Calcul des statistiques (résumé)
         $summary = [
+            'total_paid' => $orders->sum(function ($order) {
+                return $order->payments()->where('status', 'paid')->sum('amount');
+            }), 
             'total_revenue' => $orders->sum('amount'), // Somme du montant total des commandes
             'orders_count' => $orders->count(),        // Nombre total de commandes sur la période
         ];

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { cn, currencyFormatter } from '@/lib/utils';
 import AppLayout from '@/layouts/app-layout';
 import { DateRange } from 'react-day-picker';
 
@@ -20,6 +20,7 @@ interface OrderReportProps {
         end_date?: string;
     };
     summary: {
+        total_paid: number;
         total_revenue: number;
         orders_count: number;
     }
@@ -90,7 +91,7 @@ export default function OrderReport({ orders, filters, summary }: OrderReportPro
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="end">
                                 <Calendar
-                                    initialFocus
+                                    autoFocus={false}
                                     mode="range"
                                     defaultMonth={date?.from}
                                     selected={date}
@@ -102,16 +103,24 @@ export default function OrderReport({ orders, filters, summary }: OrderReportPro
                     </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                    <Card>
+                <div className="grid gap-4 md:grid-cols-3">
+                    <Card className="shadow-none">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Chiffre d'Affaires</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{summary.total_revenue.toLocaleString()} FCFA</div>
+                            <div className="text-2xl font-bold">{currencyFormatter(summary.total_revenue)}</div>
                         </CardContent>
                     </Card>
-                    <Card>
+                    <Card className="shadow-none">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total payé</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{currencyFormatter(summary.total_paid)}</div>
+                        </CardContent>
+                    </Card>
+                    <Card className="shadow-none">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Nombre de Commandes</CardTitle>
                         </CardHeader>
@@ -150,10 +159,10 @@ export default function OrderReport({ orders, filters, summary }: OrderReportPro
                                             {getStatusBadge(order.status)}
                                         </TableCell>
                                         <TableCell className="text-right font-medium">
-                                            {order.amount.toLocaleString()} FCFA
+                                            {currencyFormatter(order.amount)}
                                         </TableCell>
                                         <TableCell className="text-right text-muted-foreground">
-                                            {order.remaining > 0 ? `${order.remaining.toLocaleString()} FCFA` : '-'}
+                                            {order.remaining > 0 ? currencyFormatter(order.remaining) : '-'}
                                         </TableCell>
                                     </TableRow>
                                 ))
