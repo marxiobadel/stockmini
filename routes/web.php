@@ -5,6 +5,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupplierController;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +33,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('customers', CustomerController::class)->except(['edit', 'create', 'destroy']);
     Route::post('customers/destroy', [CustomerController::class, 'destroy'])->name('customers.destroy');
+
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('products', [ReportController::class, 'products'])->name('products');
+        Route::get('orders', [ReportController::class, 'orders'])->name('orders');
+    });
 });
 
 require __DIR__.'/settings.php';

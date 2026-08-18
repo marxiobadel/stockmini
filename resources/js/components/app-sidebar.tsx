@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { House, LayoutGrid, Package, ShoppingBag, UserCheck } from 'lucide-react';
+import { FileBarChart, House, LayoutGrid, Package, ReceiptPoundSterling, ShoppingBag, UserCheck } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -35,7 +35,18 @@ const mainNavItems: NavItem[] = [
     },
 ];
 
-const footerNavItems: NavItem[] = [];
+const footerNavItems: NavItem[] = [
+    {
+        title: 'Produits',
+        href: route('reports.products'),
+        icon: ReceiptPoundSterling,
+    },
+    {
+        title: 'Commandes',
+        href: route('reports.orders'),
+        icon: FileBarChart,
+    },
+];
 
 export function AppSidebar() {
     return (

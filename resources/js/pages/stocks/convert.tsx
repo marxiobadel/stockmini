@@ -195,7 +195,7 @@ export default function ConversionForm({ open, onClose, stock, stocks, products 
                                                             onSelect={() => form.setData("destination_product_id", String(product.id))}
                                                         >
                                                             <Check className={cn("mr-2 h-4 w-4", form.data.destination_product_id === String(product.id) ? "opacity-100" : "opacity-0")} />
-                                                            {product.name}
+                                                            {product.name} - {product.unity.name}
                                                         </CommandItem>
                                                     ))}
                                                 </CommandGroup>
