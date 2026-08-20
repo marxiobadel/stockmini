@@ -97,7 +97,14 @@ class ProductController extends Controller
             if ($request->has('ids')) {
                 $ids = $request->input('ids', []);
 
-                Product::destroy($ids);
+                foreach ($ids as $id) {
+                    $product = Product::with('stocks')->whereId($id)->first();
+
+                    if ($product) {
+                        $product->stocks->each->delete();
+                        $product->delete();
+                    }
+                }
             }
 
             return back()->with('success', 'Produit(s) supprimé(s) avec succès.');

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Ajout de useEffect
 import { Head, router } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
@@ -6,6 +6,7 @@ import { Order } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
@@ -27,13 +28,56 @@ interface OrderReportProps {
 }
 
 export default function OrderReport({ orders, filters, summary }: OrderReportProps) {
-    // 1. Utilisez <DateRange | undefined> au lieu de votre type inline
+    // --- ÉTATS POUR LE VERROUILLAGE ---
+    const [isUnlocked, setIsUnlocked] = useState(false);
+    const [secretCode, setSecretCode] = useState('');
+    const [error, setError] = useState('');
+
+    const EXPECTED_CODE = '123456'; // Code à modifier selon vos besoins
+    const STORAGE_KEY = 'order_report_unlock_expires';
+
+    // Vérifier le localStorage au montage du composant
+    useEffect(() => {
+        const expirationTime = localStorage.getItem(STORAGE_KEY);
+        
+        if (expirationTime) {
+            const now = new Date().getTime();
+            // Si le temps actuel est inférieur au temps d'expiration
+            if (now < parseInt(expirationTime, 10)) {
+                setIsUnlocked(true);
+            } else {
+                // Le délai est dépassé, on nettoie le localStorage
+                localStorage.removeItem(STORAGE_KEY);
+            }
+        }
+    }, []);
+
+    const handleUnlock = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (secretCode === EXPECTED_CODE) {
+            setIsUnlocked(true);
+            setError('');
+            
+            // Sauvegarder la date d'expiration (Heure actuelle + 1 heure en millisecondes)
+            const oneHour = 60 * 60 * 1000;
+            const expiresAt = new Date().getTime() + oneHour;
+            localStorage.setItem(STORAGE_KEY, expiresAt.toString());
+        } else {
+            setError('Code secret incorrect. Veuillez réessayer.');
+            setSecretCode('');
+        }
+    };
+
+    const handleGoBack = () => {
+        window.history.back();
+    };
+    // ----------------------------------
+
     const [date, setDate] = useState<DateRange | undefined>({
         from: filters.start_date ? new Date(filters.start_date) : undefined,
         to: filters.end_date ? new Date(filters.end_date) : undefined,
     });
 
-    // 2. Utilisez DateRange ici aussi
     const applyDateFilter = (selectedDate: DateRange | undefined) => {
         setDate(selectedDate);
 
@@ -45,7 +89,6 @@ export default function OrderReport({ orders, filters, summary }: OrderReportPro
         }
     };
 
-    // Fonction utilitaire pour la couleur des statuts
     const getStatusBadge = (status: Order['status']) => {
         switch (status) {
             case 'paid': return <Badge className="bg-green-600 hover:bg-green-700">Payé</Badge>;
@@ -58,7 +101,53 @@ export default function OrderReport({ orders, filters, summary }: OrderReportPro
     return (
         <AppLayout>
             <Head title="Rapport des Commandes" />
-            <div className="space-y-6 p-6">
+
+            {/* Popup (Overlay) demandant le code secret */}
+            {!isUnlocked && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md">
+                    <Card className="w-full max-w-md shadow-lg border-2">
+                        <CardHeader>
+                            <CardTitle className="text-center text-xl">Accès Restreint</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-sm text-muted-foreground text-center mb-6">
+                                Veuillez entrer le code secret pour consulter le rapport des ventes.
+                            </p>
+                            <form onSubmit={handleUnlock} className="space-y-4">
+                                <div className="space-y-2">
+                                    <Input
+                                        type="password"
+                                        placeholder="Code secret..."
+                                        value={secretCode}
+                                        onChange={(e) => setSecretCode(e.target.value)}
+                                        className={error ? 'border-destructive' : ''}
+                                        autoFocus
+                                    />
+                                    {error && (
+                                        <p className="text-sm font-medium text-destructive">{error}</p>
+                                    )}
+                                </div>
+                                <div className="flex gap-3 pt-2">
+                                    <Button 
+                                        type="button" 
+                                        variant="outline" 
+                                        className="w-full" 
+                                        onClick={handleGoBack}
+                                    >
+                                        Retour
+                                    </Button>
+                                    <Button type="submit" className="w-full">
+                                        Déverrouiller
+                                    </Button>
+                                </div>
+                            </form>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+
+            {/* Contenu principal de la page flouté/désactivé si verrouillé */}
+            <div className={`space-y-6 p-6 transition-all duration-300 ${!isUnlocked ? 'pointer-events-none opacity-20 blur-sm select-none' : ''}`}>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
                         <h2 className="text-2xl font-bold tracking-tight">Rapport des Ventes</h2>

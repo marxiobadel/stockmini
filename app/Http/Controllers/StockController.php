@@ -24,7 +24,7 @@ class StockController extends Controller
             'sort' => ['nullable', 'string'],
         ]);
 
-        $query = Stock::with('product');
+        $query = Stock::with('product')->has('product');
 
         if ($request->filled('search')) {
             $query->whereHas('product', function ($q) use ($request) {

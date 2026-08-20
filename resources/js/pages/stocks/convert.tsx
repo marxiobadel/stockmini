@@ -71,7 +71,7 @@ export default function ConversionForm({ open, onClose, stock, stocks, products 
     const getSourceStockLabel = (stockId: string) => {
         const stock = stocks.find(s => String(s.id) === stockId);
         if (!stock) return "Sélectionnez un stock source";
-        return `${stock.product.name} (Dispo: ${stock.quantity_in_stock})`;
+        return `${stock.product?.name} (Dispo: ${stock.quantity_in_stock})`;
     };
 
     return (
@@ -136,7 +136,7 @@ export default function ConversionForm({ open, onClose, stock, stocks, products 
                                                                             : "opacity-0"
                                                                     )}
                                                                 />
-                                                                {stock.product.name} - Dispo: {stock.quantity_in_stock}
+                                                                {stock.product?.name} - Dispo: {stock.quantity_in_stock}
                                                             </CommandItem>
                                                         ))}
                                                 </CommandGroup>

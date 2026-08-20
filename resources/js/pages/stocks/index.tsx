@@ -120,7 +120,7 @@ export default function Index({ stocks, products, suppliers, filters }: PageProp
             cell: ({ row }) => {
                 const stock = row.original;
 
-                return plural(stock.quantity_in_stock, stock.product.unity.name);
+                return plural(stock.quantity_in_stock, stock?.product?.unity?.name);
             }
         },
         {
@@ -130,7 +130,7 @@ export default function Index({ stocks, products, suppliers, filters }: PageProp
                 const stock = row.original;
 
                 if (stock.product) {
-                    return stock.product.name;
+                    return stock?.product?.name;
                 } else {
                     return <span className="text-sm text-muted-foreground">Produit supprimé</span>;
                 }

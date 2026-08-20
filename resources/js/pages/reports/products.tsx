@@ -4,9 +4,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Ajout de useEffect
 import { currencyFormatter, plural } from '@/lib/utils';
-// Assurez-vous d'avoir ces composants ou remplacez-les par des balises HTML standards
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -19,24 +18,58 @@ interface ProductReportProps {
 }
 
 export default function ProductReport({ categories }: ProductReportProps) {
-    // État pour gérer le verrouillage, la saisie et les erreurs
     const [isUnlocked, setIsUnlocked] = useState(false);
     const [secretCode, setSecretCode] = useState('');
     const [error, setError] = useState('');
 
-    // Le code secret attendu (à modifier selon vos besoins)
     const EXPECTED_CODE = '123456';
+    const STORAGE_KEY = 'product_report_unlock_expires'; // Clé locale spécifique pour cette page
+
+    // Vérifier le localStorage au montage du composant
+    useEffect(() => {
+        const expirationTime = localStorage.getItem(STORAGE_KEY);
+        
+        if (expirationTime) {
+            const now = new Date().getTime();
+            // Si le temps actuel est inférieur au temps d'expiration
+            if (now < parseInt(expirationTime, 10)) {
+                setIsUnlocked(true);
+            } else {
+                // Le délai est dépassé, on nettoie le localStorage
+                localStorage.removeItem(STORAGE_KEY);
+            }
+        }
+    }, []);
 
     const handleUnlock = (e: React.FormEvent) => {
         e.preventDefault();
         if (secretCode === EXPECTED_CODE) {
             setIsUnlocked(true);
             setError('');
+
+            // Sauvegarder la date d'expiration (Heure actuelle + 1 heure en millisecondes)
+            const oneHour = 60 * 60 * 1000;
+            const expiresAt = new Date().getTime() + oneHour;
+            localStorage.setItem(STORAGE_KEY, expiresAt.toString());
         } else {
             setError('Code secret incorrect. Veuillez réessayer.');
             setSecretCode('');
         }
     };
+
+    // Fonction pour revenir à la page précédente
+    const handleGoBack = () => {
+        window.history.back();
+    };
+
+    const totalInventoryValue = categories.reduce((total, category) => {
+        const categoryValue = category.products.reduce((catTotal, product) => {
+            const stock = product.quantity_in_stock ?? 0;
+            const price = product.purchasing_price ?? 0;
+            return catTotal + (stock * price);
+        }, 0);
+        return total + categoryValue;
+    }, 0);
 
     return (
         <AppLayout>
@@ -67,23 +100,33 @@ export default function ProductReport({ categories }: ProductReportProps) {
                                         <p className="text-sm font-medium text-destructive">{error}</p>
                                     )}
                                 </div>
-                                <Button type="submit" className="w-full">
-                                    Déverrouiller
-                                </Button>
+                                {/* Boutons : Retour et Déverrouiller */}
+                                <div className="flex gap-3 pt-2">
+                                    <Button 
+                                        type="button" 
+                                        variant="outline" 
+                                        className="w-full" 
+                                        onClick={handleGoBack}
+                                    >
+                                        Retour
+                                    </Button>
+                                    <Button type="submit" className="w-full">
+                                        Déverrouiller
+                                    </Button>
+                                </div>
                             </form>
                         </CardContent>
                     </Card>
                 </div>
             )}
 
-            {/* Contenu principal de la page (flouté et désactivé si non déverrouillé) */}
+            {/* Contenu principal de la page */}
             <div className={`space-y-6 p-6 transition-all duration-300 ${!isUnlocked ? 'pointer-events-none opacity-20 blur-sm select-none' : ''}`}>
                 <div>
                     <h2 className="text-2xl font-bold tracking-tight">Rapport d'Inventaire</h2>
                     <p className="text-muted-foreground">Analyse des produits classés par catégorie.</p>
                 </div>
 
-                {/* Cartes de résumé */}
                 <div className="grid gap-4 md:grid-cols-3">
                     <Card className="shadow-none">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -93,9 +136,18 @@ export default function ProductReport({ categories }: ProductReportProps) {
                             <div className="text-2xl font-bold">{categories.length}</div>
                         </CardContent>
                     </Card>
+                    <Card className="shadow-none">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Valeur Totale en Stock</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold text-primary">
+                                {currencyFormatter(totalInventoryValue)}
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
 
-                {/* Tableau classifié par catégories */}
                 <div className="rounded-md border bg-card">
                     <Table>
                         <TableHeader>
@@ -103,21 +155,19 @@ export default function ProductReport({ categories }: ProductReportProps) {
                                 <TableHead>Produit</TableHead>
                                 <TableHead>Catégorie</TableHead>
                                 <TableHead className="text-right">Stock Actuel</TableHead>
+                                <TableHead className="text-right">Prix d'Achat</TableHead>
                                 <TableHead className="text-right">Prix de Vente</TableHead>
-                                <TableHead className="text-right">Valeur Totale</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {categories.map((category) => (
                                 <React.Fragment key={`cat-${category.id}`}>
-                                    {/* En-tête de séparation pour la catégorie */}
                                     <TableRow className="bg-muted/50">
                                         <TableCell colSpan={5} className="font-semibold text-primary">
                                             {category.name} ({category.products.length} produits)
                                         </TableCell>
                                     </TableRow>
 
-                                    {/* Liste des produits de cette catégorie */}
                                     {category.products.map((product) => {
                                         const stock = product.quantity_in_stock ?? 0;
                                         const price = product.selling_price ?? 0;
@@ -137,10 +187,8 @@ export default function ProductReport({ categories }: ProductReportProps) {
                                                         {plural(stock, product.unity?.name || "unité")}
                                                     </Badge>
                                                 </TableCell>
+                                                <TableCell className="text-right">{currencyFormatter(product.purchasing_price ?? 0)}</TableCell>
                                                 <TableCell className="text-right">{currencyFormatter(price)}</TableCell>
-                                                <TableCell className="text-right font-medium">
-                                                    {currencyFormatter(price * stock)}
-                                                </TableCell>
                                             </TableRow>
                                         );
                                     })}
