@@ -70,8 +70,10 @@
     <table class="items" cellpadding="10">
         @foreach ($order->products as $product)
             <tr>
-                <td style="font-weight: bold; text-transform: uppercase;">
-                    {{ $product->name }} x{{ $product->pivot->quantity ?? 1 }}
+                <td>
+                    <span style="font-weight: bold; text-transform: uppercase;">{{ $product->name }}</span><br/>
+                    (x{{ $product->pivot->quantity ?? 1 }}){{" "}}
+                    {{ number_format($product->pivot->price, 0, ',', ' ') }} FCFA
                 </td>
                 <td class="right" style="font-weight: bold;">
                     {{ number_format(($product->pivot->price ?? 0) * ($product->pivot->quantity ?? 1), 0, ',', ' ') }} F

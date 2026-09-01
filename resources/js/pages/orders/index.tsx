@@ -148,7 +148,7 @@ export default function Index({ orders, filters }: PageProps) {
                 return <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(route('orders.print', row.original.id), '_blank')}
+                    onClick={() => handleDirectPrint(row.original.id)}
                 >
                     <FileText className="w-4 h-4"/>
                 </Button>
@@ -212,6 +212,43 @@ export default function Index({ orders, filters }: PageProps) {
     const handleRowSelectionChange = (updaterOrValue: Record<string, boolean> | ((old: Record<string, boolean>) => Record<string, boolean>)) => {
         const newValue = typeof updaterOrValue === "function" ? updaterOrValue(rowSelection) : updaterOrValue;
         setRowSelection(newValue);
+    };
+
+    const handleDirectPrint = async (orderId: number) => {
+        const toastId = toast.loading("Préparation de l'impression...");
+        
+        try {
+            // 1. Récupération silencieuse du flux PDF
+            const response = await fetch(route('orders.print', orderId));
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+
+            // 2. Création d'une iframe invisible
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = blobUrl;
+            document.body.appendChild(iframe);
+
+            // 3. Déclenchement de l'impression au chargement
+            iframe.onload = () => {
+                setTimeout(() => {
+                    iframe.contentWindow?.focus();
+                    iframe.contentWindow?.print();
+                    toast.dismiss(toastId);
+
+                    // 4. Nettoyage de la mémoire après l'impression
+                    setTimeout(() => {
+                        if (document.body.contains(iframe)) {
+                            document.body.removeChild(iframe);
+                        }
+                        URL.revokeObjectURL(blobUrl);
+                    }, 60000); // Nettoyage différé (1 min) pour ne pas interrompre le spooler
+                }, 500); // Léger délai pour s'assurer que le lecteur PDF interne est prêt
+            };
+        } catch (error) {
+            toast.dismiss(toastId);
+            toast.error("Erreur lors du chargement du ticket.");
+        }
     };
 
     return (
